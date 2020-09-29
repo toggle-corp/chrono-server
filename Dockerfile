@@ -1,6 +1,6 @@
 FROM python:3.8.2-buster
 
-MAINTAINER togglecorp info@togglecorp.com
+LABEL maintainer="Togglecorp Dev dev@togglecorp.com"
 
 ENV PYTHONUNBUFFERED 1
 

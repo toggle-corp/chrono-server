@@ -143,7 +143,7 @@ STATIC_URL = '/static/'
 
 # https://docs.graphene-python.org/projects/django/en/latest/settings/
 GRAPHENE = {
-    'SCHEMA': 'helix.schema.schema',
+    'SCHEMA': 'chrono.schema.schema',
     'SCHEMA_OUTPUT': 'schema.json',  # defaults to schema.json,
     'SCHEMA_INDENT': 2,  # Defaults to None (displays all data on a single line)
     'MIDDLEWARE': (
