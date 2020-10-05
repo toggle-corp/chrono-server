@@ -36,7 +36,9 @@ CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 
 
-LOCAL_APPS = []
+LOCAL_APPS = [
+    'user'
+]
 
 # Application definition
 
@@ -48,9 +50,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 ] + [
-    '{}.{}'.format(
+    '{}.{}.apps.{}Config'.format(
         APPS_DIR_NAME,
         app,
+        ''.join([word.title() for word in app.split('_')]),
     ) for app in LOCAL_APPS
 ]
 
