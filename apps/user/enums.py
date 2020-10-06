@@ -1,5 +1,5 @@
 import graphene
 
-from .modles import Profile
+from user.models import Profile
 
-GenderGrapheneEnum = graphene.Enum.from_enum(Contact.GENDER)
+GenderGrapheneEnum = graphene.Enum.from_enum(Profile.GENDER)

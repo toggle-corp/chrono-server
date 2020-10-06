@@ -49,6 +49,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'rest_framework',
+    'django_filters',
+
 ] + [
     '{}.{}.apps.{}Config'.format(
         APPS_DIR_NAME,
@@ -56,6 +60,7 @@ INSTALLED_APPS = [
         ''.join([word.title() for word in app.split('_')]),
     ) for app in LOCAL_APPS
 ]
+
 
 
 MIDDLEWARE = [

@@ -1,10 +1,11 @@
 import graphene
+from graphene_file_upload.scalars import Upload
 from django.utils.translation import gettext_lazy as _
 
-from .models import Profile 
-from .schema import ProfileType
-from .serializers import ProfileSerializer
-from .enums import GenderGrapheneEnum
+from user.models import Profile 
+from user.schema import ProfileType
+from user.serializers import ProfileSerializer
+from user.enums import GenderGrapheneEnum
 from utils.error_types import CustomErrorType, mutation_is_not_valid
 
 
@@ -14,21 +15,21 @@ class ProfileCreateInputType(graphene.InputObjectType):
     """
     user = graphene.ID(required=True)
     middle_name = graphene.String()
-    #display_picture
+    display_picture = Upload(required=False)
     phone_number = graphene.String(required=True)
     address = graphene.String()
     gender = graphene.Field(GenderGrapheneEnum)
     join_date = graphene.Date()
     date_of_birth = graphene.Date()
     position = graphene.String()
-    #signature =
+    signature = Upload(required=False)
 
 
 class ProfileUpdateInputType(graphene.InputObjectType):
     """
     Profile Update InputType
     """
-    user = graphene.ID()
+    user = graphene.ID(required=True)
     phone_number = graphene.String()
     address = graphene.String()
     position = graphene.String()

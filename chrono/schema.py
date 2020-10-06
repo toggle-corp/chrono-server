@@ -1,13 +1,14 @@
 import graphene
 
-from apps.user import schema as user_schema, mutation as user_mutation
+from user import schema as user_schema, mutations as user_mutations
 
 
 class Query(user_schema.Query,):
     pass
 
 
-class Mutation(user_mutation.Mutation,):
+
+class Mutation(user_mutations.Mutation,):
     pass
 
 
