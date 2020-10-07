@@ -1,15 +1,17 @@
 from django.contrib.auth import get_user_model
 import graphene
+from graphene_django import DjangoObjectType
 from graphene_django_extras import DjangoObjectField, DjangoObjectType 
 
-from user.models import Profile
+from user.models import Profile, User
 from user.enums import GenderGrapheneEnum
 
-class UserType(graphene.ObjectType):
+class UserType(DjangoObjectType):
     class Meta:
-        model = get_user_model()
+        model = User
+        fields = '__all__'
 
-class ProfileType(graphene.ObjectType):
+class ProfileType(DjangoObjectType):
     class Meta:
         model = Profile
         filter_fields = []

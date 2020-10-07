@@ -3,12 +3,12 @@ import graphene
 from user import schema as user_schema, mutations as user_mutations
 
 
-class Query(user_schema.Query,):
+class Query(graphene.ObjectType, user_schema.Query,):
     pass
 
 
 
-class Mutation(user_mutations.Mutation,):
+class Mutation(graphene.ObjectType,user_mutations.Mutation,):
     pass
 
 

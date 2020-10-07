@@ -44,7 +44,6 @@ class ProfileCreateInputType(graphene.InputObjectType):
     Profile Create InputType
     """
     user = graphene.ID(required=True)
-    middle_name = graphene.String()
     display_picture = Upload(required=False)
     phone_number = graphene.String(required=True)
     address = graphene.String()
@@ -59,7 +58,8 @@ class ProfileUpdateInputType(graphene.InputObjectType):
     """
     Profile Update InputType
     """
-    user = graphene.ID(required=True)
+    id = graphene.ID(required=True)
+    user = graphene.ID()
     phone_number = graphene.String()
     address = graphene.String()
     position = graphene.String()
