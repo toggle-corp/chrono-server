@@ -1,12 +1,42 @@
+from django.utils.translation import gettext
+from django.contrib.auth import login, logout
 import graphene
 from graphene_file_upload.scalars import Upload
-from django.utils.translation import gettext_lazy as _
+from graphene_django.rest_framework.mutation import SerializerMutation
 
 from user.models import Profile 
-from user.schema import ProfileType
-from user.serializers import ProfileSerializer
+from user.schema import ProfileType, UserType
+from user.serializers import ProfileSerializer, LoginSerializer, RegisterSerializer
 from user.enums import GenderGrapheneEnum
 from utils.error_types import CustomErrorType, mutation_is_not_valid
+
+
+class RegisterMutation(SerializerMutation):
+    class Meta:
+        serializer_class = RegisterSerializer
+    
+
+class LoginMutation(SerializerMutation):
+    class Meta:
+        serializer_class = LoginSerializer
+    
+    me = graphene.Field(UserType)
+
+
+    @classmethod
+    def perform_mutate(cls, serializer, info):
+        if user := serializer.validated_data.get('user', None):
+            login(info.context, user)
+        return cls(errors=None, me=user)
+
+
+class LogoutMutation(graphene.Mutation):
+    ok = graphene.Boolean()
+
+    def mutate(self, info, *args, **kwargs):
+        if info.context.user.is_authenticated:
+            logout(info.context)
+        return LogoutMutation(ok=True)
 
 
 class ProfileCreateInputType(graphene.InputObjectType):
@@ -35,7 +65,7 @@ class ProfileUpdateInputType(graphene.InputObjectType):
     position = graphene.String()
 
 
-class CreateProfile(graphene.Mutation):
+class CreateProfileMutation(graphene.Mutation):
     class Arguments:
         profile = ProfileCreateInputType(required=True)
     
@@ -47,12 +77,12 @@ class CreateProfile(graphene.Mutation):
     def mutate(root, info, profile):
         serializer = ProfileSerializer(data=profile)
         if errors := mutation_is_not_valid(serializer):
-            return CreateProfile(errors=errors, ok=False)
+            return CreateProfileMutation(errors=errors, ok=False)
         instance = serializer.save()
-        return CreateProfile(profile=instance, errors=None, ok=True)
+        return CreateProfileMutation(profile=instance, errors=None, ok=True)
 
 
-class UpdateProfile(graphene.Mutation):
+class UpdateProfileMutation(graphene.Mutation):
     class Arguments:
         profile = ProfileUpdateInputType(required=True)
     
@@ -65,19 +95,22 @@ class UpdateProfile(graphene.Mutation):
         try:
             instance = Profile.objects.get(id=profile['id'])
         except Profile.DoesNotExist:
-            return UpdateProfile(errors=[
+            return UpdateProfileMutation(errors=[
                 CustomErrorType(field='non_field_errors', 
-                messages=[_('Profile does not exist.')])
+                messages=[gettext('Profile does not exist.')])
             ])
         serializer = ProfileSerializer(instance=instance,
                                       data=profile,
                                       partial=True)
         if errors:= mutation_is_not_valid(serializer):
-            return UpdateProfile(errors=errors, ok=False)
+            return UpdateProfileMutation(errors=errors, ok=False)
         instance = serializer.save()
-        return UpdateProfile(profile=instance, errors=None, ok=True)
+        return UpdateProfileMutation(profile=instance, errors=None, ok=True)
 
 
 class Mutation(object):
-    create_profile = CreateProfile.Field()
-    update_profile =  UpdateProfile.Field()
+    create_profile = CreateProfileMutation.Field()
+    update_profile =  UpdateProfileMutation.Field()
+    login = LoginMutation.Field()
+    register = RegisterMutation.Field()
+    logout = LogoutMutation.Field()

@@ -36,5 +36,5 @@ class CustomUserAdmin(UserAdmin):
     list_select_related = ('profile', )
 
 
-admin.site.unregister(User)
+#0admin.site.register(User, UserAdmin)
 admin.site.register(User, CustomUserAdmin)

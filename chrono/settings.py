@@ -14,7 +14,7 @@ import os
 import sys
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 
 APPS_DIR_NAME = 'apps'
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -35,12 +35,19 @@ ALLOWED_HOSTS = ['*']
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 
+# Application definition
 
 LOCAL_APPS = [
     'user'
 ]
 
-# Application definition
+
+THIRD_PARTY_APPS = [
+    'graphene_django',
+    'graphene_graphiql_explorer',
+    'corsheaders',
+    'django_filters',
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -50,15 +57,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'rest_framework',
-    'django_filters',
-
-] + [
-    '{}.{}.apps.{}Config'.format(
-        APPS_DIR_NAME,
-        app,
-        ''.join([word.title() for word in app.split('_')]),
-    ) for app in LOCAL_APPS
+] + THIRD_PARTY_APPS + [
+    f'{APPS_DIR_NAME}.{app}.apps.{"".join([word.title() for word in app.split("_")])}Config' for app in LOCAL_APPS
 ]
 
 
@@ -148,6 +148,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+
+
+AUTH_USER_MODEL = 'user.User'
 
 # https://docs.graphene-python.org/projects/django/en/latest/settings/
 GRAPHENE = {

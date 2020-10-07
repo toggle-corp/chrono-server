@@ -1,8 +1,21 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
 from django_enumfield import enum
 
+
+class User(AbstractUser):
+    email = models.EmailField(unique=True)
+    username = models.CharField(
+        max_length=20,
+        help_text="Required 20 characters or fewer",
+    )
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
+
+    def get_full_name(self):
+        return f'{self.first_name} {self.last_name}'
 
 class Profile(models.Model):
     """
@@ -21,8 +34,6 @@ class Profile(models.Model):
         }
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    middle_name = models.CharField(max_length=64,null=True,
-                                  blank=True)
     display_picture = models.FileField(upload_to='user-profile/',
                                        default=None, blank=True,
                                        null=True)
