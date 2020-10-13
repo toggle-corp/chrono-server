@@ -26,7 +26,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise ValidationError("Credentials already in use")
     
     def save(self, *kwargs):
-        return User.objects.create(
+        return User.objects.create_user(
             first_name=self.validated_data.get('first_name',''),
             last_name=self.validated_data.get('last_name',''),
             username=self.validated_data.get('username',''),
@@ -40,7 +40,7 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(required=True, write_only=True)
 
     def validate(self, attrs):
-        email = attrs.get('eamil','')
+        email = attrs.get('email','')
         password = attrs.get('password','')
         user = authenticate(email=email, password=password)
         if not user:

@@ -19,7 +19,7 @@ class ProfileType(DjangoObjectType):
 
 class Query(object):
     profile = DjangoObjectField(ProfileType)
-    me  = graphene.Field(UserType)
+    me = graphene.Field(UserType)
 
     def resolve_me(parent, info):
         if info.context.user.is_authenticated:

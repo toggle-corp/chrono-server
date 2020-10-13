@@ -147,8 +147,8 @@ class TestLogOut(ChronoGraphQLTestCase):
 class TestProfileCreate(ChronoGraphQLTestCase):
     def setUp(self):
         self.mutation = '''
-            mutation CreateProfileMutation($input: ProfileCreateInputType!){
-                createProfileMutation(profile: $input){
+            mutation CreateProfile($input: ProfileCreateInputType!){
+                createProfile(profile: $input){
                     errors{
                         field
                         messages
@@ -172,34 +172,32 @@ class TestProfileCreate(ChronoGraphQLTestCase):
         self.input = {
             'user':UserFactory().id,
             'phone_number':"85222153330",
-            'join_date':"2020-10-10",
-            'address':"Kathmandu",
-            'position':"zzzz",
+            'gender': MALE,
 
         }
 
         def test_valid_profile_creation(self):
             response = self.query(
                 self.mutation,
-                input_data=self.input_data,
+                input_data=self.input,
             )
 
             content = json.loads(response.content)
 
             self.assertResponseNoErrors(content)
-            self.assertTrue(content['data']['CreateProfileMutation']['ok'], content)
-            self.assertIsNone(content['data']['CreateProfileMutation']['errors'], content)
-            self.assertEqual(content['data']['CreateProfileMutation']['profile']['phone_number'],
+            self.assertTrue(content['data']['CreateProfile']['ok'], content)
+            self.assertIsNone(content['data']['CreateProfile']['errors'], content)
+            self.assertEqual(content['data']['CreateProfile']['profile']['phone_number'],
                             self.input['phone_number'])
-            self.assertEqual(content['data']['CreateProfileMutation']['profile']['user'],
+            self.assertEqual(content['data']['CreateProfile']['profile']['user'],
                             self.input['user'])
 
 
 class TestUpdateProfile(ChronoGraphQLTestCase):
     def setUp(self):
         self.mutation = '''
-            mutation UpdateProfileMutation($input: ProfileUpdateInputType!){
-                updateProfileMutation(event: $input){
+            mutation UpdateProfile($input: ProfileUpdateInputType!){
+                updateProfile(event: $input){
                     errors{
                         field
                         messages
@@ -229,10 +227,10 @@ class TestUpdateProfile(ChronoGraphQLTestCase):
             content = json.loads(response.content)
             
             self.assertResponseNoErrors(content)
-            self.assertTrue(content['data']['CreateProfileMutation']['ok'], content)
-            self.assertIsNone(content['data']['CreateProfileMutation']['errors'], content)
-            self.assertEqual(content['data']['CreateProfileMutation']['profile']['id'],
+            self.assertTrue(content['data']['UpdateProfile']['ok'], content)
+            self.assertIsNone(content['data']['UpdateProfile']['errors'], content)
+            self.assertEqual(content['data']['UpdateProfile']['profile']['id'],
                             self.input['id'])
-            self.assertEqual(content['data']['CreateProfileMutation']['profile']['user'],
+            self.assertEqual(content['data']['UpdateProfile']['profile']['user'],
                             self.input['user'])
             

@@ -15,7 +15,7 @@ class ChronoGraphQLTestCase(GraphQLTestCase):
         user_password = 'test123'
         user = User.objects.create_user(
             username='jon@dave.com',
-            email='jon@dave.com'
+            email='jon@dave.com',
             password=user_password,
         )
         user.user_password = user_password

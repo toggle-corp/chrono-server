@@ -63,9 +63,9 @@ class ProfileUpdateInputType(graphene.InputObjectType):
     phone_number = graphene.String()
     address = graphene.String()
     position = graphene.String()
+    gender = graphene.Field(GenderGrapheneEnum)
 
-
-class CreateProfileMutation(graphene.Mutation):
+class CreateProfile(graphene.Mutation):
     class Arguments:
         profile = ProfileCreateInputType(required=True)
     
@@ -77,12 +77,12 @@ class CreateProfileMutation(graphene.Mutation):
     def mutate(root, info, profile):
         serializer = ProfileSerializer(data=profile)
         if errors := mutation_is_not_valid(serializer):
-            return CreateProfileMutation(errors=errors, ok=False)
+            return CreateProfile(errors=errors, ok=False)
         instance = serializer.save()
-        return CreateProfileMutation(profile=instance, errors=None, ok=True)
+        return CreateProfile(profile=instance, errors=None, ok=True)
 
 
-class UpdateProfileMutation(graphene.Mutation):
+class UpdateProfile(graphene.Mutation):
     class Arguments:
         profile = ProfileUpdateInputType(required=True)
     
@@ -95,7 +95,7 @@ class UpdateProfileMutation(graphene.Mutation):
         try:
             instance = Profile.objects.get(id=profile['id'])
         except Profile.DoesNotExist:
-            return UpdateProfileMutation(errors=[
+            return UpdateProfile(errors=[
                 CustomErrorType(field='non_field_errors', 
                 messages=[gettext('Profile does not exist.')])
             ])
@@ -103,14 +103,14 @@ class UpdateProfileMutation(graphene.Mutation):
                                       data=profile,
                                       partial=True)
         if errors:= mutation_is_not_valid(serializer):
-            return UpdateProfileMutation(errors=errors, ok=False)
+            return UpdateProfile(errors=errors, ok=False)
         instance = serializer.save()
-        return UpdateProfileMutation(profile=instance, errors=None, ok=True)
+        return UpdateProfile(profile=instance, errors=None, ok=True)
 
 
 class Mutation(object):
-    create_profile = CreateProfileMutation.Field()
-    update_profile =  UpdateProfileMutation.Field()
+    create_profile = CreateProfile.Field()
+    update_profile =  UpdateProfile.Field()
     login = LoginMutation.Field()
     register = RegisterMutation.Field()
     logout = LogoutMutation.Field()
