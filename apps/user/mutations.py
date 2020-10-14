@@ -63,7 +63,6 @@ class ProfileUpdateInputType(graphene.InputObjectType):
     phone_number = graphene.String()
     address = graphene.String()
     position = graphene.String()
-    gender = graphene.Field(GenderGrapheneEnum)
 
 class CreateProfile(graphene.Mutation):
     class Arguments:

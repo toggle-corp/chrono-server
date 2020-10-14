@@ -11,7 +11,7 @@ class ChronoGraphQLTestCase(GraphQLTestCase):
     GRAPHQL_URL = '/graphql'
     GRAPHQL_SCHEMA = 'chrono.schema.schema'
 
-    def create_user(self):
+    def create_user(self) -> User:
         user_password = 'test123'
         user = User.objects.create_user(
             username='jon@dave.com',
