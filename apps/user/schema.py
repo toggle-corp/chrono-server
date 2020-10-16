@@ -1,28 +1,29 @@
 from django.contrib.auth import get_user_model
 import graphene
-from graphene_django import DjangoObjectType
-from graphene_django_extras import DjangoObjectField, DjangoObjectType 
+from graphene_django_extras import DjangoObjectField, DjangoObjectType
 
-from user.models import Profile, User
+from user.models import User
 from user.enums import GenderGrapheneEnum
+
 
 class UserType(DjangoObjectType):
     class Meta:
         model = User
-        fields = '__all__'
+        exclude_fields = (
+            'is_staff',
+            'is_superuser',
+            'is_active',
+            'groups',
+            'user_permissions',
+            'password',
+        )
 
-class ProfileType(DjangoObjectType):
-    class Meta:
-        model = Profile
-        filter_fields = []
-    gender = graphene.Field(GenderGrapheneEnum)
 
 class Query(object):
-    profile = DjangoObjectField(ProfileType)
+    profile = graphene.Field(UserType)
     me = graphene.Field(UserType)
 
     def resolve_me(parent, info):
         if info.context.user.is_authenticated:
-            return info.context.user 
+            return info.context.user
         return None
-        

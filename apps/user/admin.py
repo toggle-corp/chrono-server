@@ -1,40 +1,8 @@
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
-from .models import Profile, User
-
-class ProfileInline(admin.StackedInline):
-    model = Profile
-    can_delete = False
-    verbose_name_plural = 'Profile'
-    fk_name = 'user'
+from .models import User
 
 
-class CustomUserAdmin(UserAdmin):
-    inlines = (ProfileInline,)
-    fieldsets = (
-        (None, {
-            'fields': (
-                'username', 'email',
-                'first_name', 'last_name',
-                'password',
-                'last_login', 'date_joined',
-                'is_staff', 'is_superuser',
-            )
-        }),
-    )
-    add_fieldsets = (
-        (None, {
-            'classes': ('wide',),
-            'fields': ('username', 'email', 'password1', 'password2'),
-        }),
-    )
-    readonly_fields = ('last_login', 'date_joined', )
-    search_fields = ('username', 'email', )
-    list_display = (
-        'username', 'email', 'first_name', 'last_name',
-    )
-    list_select_related = ('profile', )
-
-
-#0admin.site.register(User, UserAdmin)
-admin.site.register(User, CustomUserAdmin)
+@admin.register(User)
+class UserAdmin(admin.ModelAdmin):
+    ordering = ('username', )
+    list_per_page = 20

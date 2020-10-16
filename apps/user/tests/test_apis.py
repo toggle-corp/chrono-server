@@ -2,7 +2,7 @@ import json
 
 from django.contrib.auth import get_user_model
 from utils.tests import ChronoGraphQLTestCase
-from utils.factories import ProfileFactory, UserFactory
+from utils.factories import UserFactory
 
 User = get_user_model()
 
@@ -37,7 +37,7 @@ class TestLogin(ChronoGraphQLTestCase):
             variables={'email': self.user.email, 'password': self.user.user_password}
         )
         content = json.loads(response.content)
-        
+
         self.assertResponseNoErrors(response)
         self.assertIsNone(content['data']['login']['errors'])
         self.assertIsNotNone(content['data']['login']['me'])
@@ -82,7 +82,7 @@ class TestRegister(ChronoGraphQLTestCase):
             'username': 'jon@dave.com',
             'password': 'test123',
         }
-    
+
     def test_valid_registration(self):
         response = self.query(
             self.register,
@@ -153,39 +153,36 @@ class TestLogOut(ChronoGraphQLTestCase):
         response = self.query(
             self.me_query
         )
-            
+
         content = json.loads(response.content)
         self.assertResponseNoErrors(response)
         self.assertEqual(content['data']['me'], None)
 
 
-class TestProfileCreate(ChronoGraphQLTestCase):
+class TestUserCreate(ChronoGraphQLTestCase):
     def setUp(self):
-        self.user = self.create_user()
         self.mutation = '''
-            mutation CreateProfile($input: ProfileCreateInputType!){
-                createProfile(profile: $input){
+            mutation CreateUser($input: UserCreateInputType!){
+                createUser(user: $input){
                     errors{
                         field
                         messages
                     }
-                    profile {
-                        user{
-                            id
-                        }
+                    user {
+                        id
+                        username
                         phoneNumber
-                        gender
                     }
                     ok
                 }
             }
         '''
-        
+
         self.input = {
-            'user':UserFactory().id,
-            'phoneNumber':"85222153330",
-            'address':"Kathmandu",
-            'gender':"MALE"
+            'username': 'test@gmail.com',
+            'email': 'test@gmail.com',
+            'password': 'nepal1111',
+            'phoneNumber': '6171818111',
 
         }
 
@@ -198,91 +195,50 @@ class TestProfileCreate(ChronoGraphQLTestCase):
         content = json.loads(response.content)
 
         self.assertResponseNoErrors(response)
-        self.assertTrue(content['data']['createProfile']['ok'], content)
-        self.assertIsNone(content['data']['createProfile']['errors'], content)
-        self.assertEqual(content['data']['createProfile']['profile']['phoneNumber'],
-                        self.input['phoneNumber'])
-        self.assertEqual(int(content['data']['createProfile']['profile']['user']['id']),
-                        self.input['user'])
-        self.assertEqual(content['data']['createProfile']['profile']['gender'],
-                        self.input['gender'])
+        self.assertTrue(content['data']['createUser']['ok'], content)
+        self.assertIsNone(content['data']['createUser']['errors'], content)
+        self.assertEqual(content['data']['createUser']['user']['username'],
+                         self.input['username'])
+        self.assertEqual(content['data']['createUser']['user']['phoneNumber'],
+                         self.input['phoneNumber'])
 
 
 class TestUpdateProfile(ChronoGraphQLTestCase):
     def setUp(self):
-        self.mutation_create = '''
-            mutation CreateProfile($input: ProfileCreateInputType!){
-                createProfile(profile: $input){
+        self.user = self.create_user()
+        self.mutation_update = '''
+            mutation UpdateUser($input: UserUpdateInputType!){
+                updateUser(user: $input){
                     errors{
                         field
                         messages
                     }
-                    profile {
-                        user{
-                            id
-                        }
+                    user{
+                        id
                         phoneNumber
-                        gender
+                        address
+                        position
                     }
                     ok
                 }
             }
         '''
-        
-        self.input_create = {
-            'user':UserFactory().id,
-            'phoneNumber':"85222153330",
-            'address':"Kathmandu",
-            'gender':"MALE"
-
-        }
-        response = self.query(
-            self.mutation_create,
-            input_data=self.input_create,
-        )
-
-        content = json.loads(response.content)
-
-        self.assertResponseNoErrors(response)
-        self.assertTrue(content['data']['createProfile']['ok'], content)
-
-        self.mutation_update = '''
-            mutation UpdateProfile($input: ProfileUpdateInputType!){
-                updateProfile(event: $input){
-                    errors{
-                        field
-                        messages
-                    }
-                    profile{
-                        id
-                        user{
-                            username
-                        }
-                        phone_number
-                        address
-                        position
-                    }
-                }
-            }
-        '''
-        self.input_update = {
-            "id":ProfileFactory.create().id,
-            "position":"Developer",
-            "user":self.input_create['id'],
+        self.input = {
+            "id": self.user.id,
+            "position": "Developer",
+            "address": "Kathmandu",
+            "phoneNumber": "9823456789",
         }
 
-    def test_valid_profile_update(self):
+    def test_valid_profile_update(self) -> None:
         response = self.query(
             self.mutation_update,
-            input_data=self.input_update,
+            input_data=self.input,
         )
         content = json.loads(response.content)
-            
+        print("data", content)
         self.assertResponseNoErrors(content)
-        self.assertTrue(content['data']['updateProfile']['ok'], content)
-        self.assertIsNone(content['data']['updateProfile']['errors'], content)
-        self.assertEqual(content['data']['updateProfile']['profile']['id'],
-                        self.input['id'])
-        self.assertEqual(content['data']['updateProfile']['profile']['position'],
-                        self.input['position'])
-            
+        self.assertTrue(content['data']['updateUser']['ok'], content)
+        self.assertIsNone(content['data']['updateUser']['errors'], content)
+        self.assertEqual(content['data']['updateUser']['user']['position'],
+                         self.input['position'])
