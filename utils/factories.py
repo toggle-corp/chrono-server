@@ -8,3 +8,8 @@ class UserFactory(DjangoModelFactory):
 
     email = factory.Sequence(lambda n: f'test{n}@email.com')
     username = factory.Sequence(lambda n: f'usename{n}')
+
+
+class UserGroupFactory(DjangoModelFactory):
+    class Meta:
+        model = 'usergroup.UserGroup'

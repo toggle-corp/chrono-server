@@ -38,7 +38,8 @@ CORS_ALLOW_CREDENTIALS = True
 # Application definition
 
 LOCAL_APPS = [
-    'user'
+    'user',
+    'usergroup',
 ]
 
 
