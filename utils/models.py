@@ -1,5 +1,5 @@
 from django.db import models
-from django.contib.auth.models import User
+from user.models import User
 
 
 class BaseModel(models.Model):
@@ -18,4 +18,3 @@ class BaseModel(models.Model):
 
     class Meta:
         abstract = True
-        
