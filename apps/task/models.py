@@ -28,10 +28,8 @@ class TaskGroup(BaseModel):
     start_date = models.DateField()
     end_date = models.DateField()
     status = enum.EnumField(STATUS, null=True)
-    user = models.ForeignKey(User,
-                             on_delete=models.CASCADE)
-    user_group = models.ForeignKey(UserGroup,
-                                   on_delete=models.CASCADE)
+    users = models.ManyToManyField(User, blank=True,)
+    user_group = models.ManyToManyField(UserGroup, blank=True,)
 
     def __str__(self):
         return self.title
@@ -49,6 +47,7 @@ class Task(BaseModel):
     external_url = models.URLField(max_length=255,
                                    blank=True, null=True)
     task_group = models.ForeignKey(TaskGroup, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     # need to create Tag model
     #tags = model.ManyToManyField(Tag, blank=True)
 
@@ -105,9 +104,10 @@ class TimeEntry(models.Model):
         return self.total_time().total_seconds()
 
     @property
-    def duration(slef):
+    def duration(self):
         end_datetime = datetime.combine(self.date, self.end_time)
         start_datetime = datetime.combine(self.date, self.start_time)
         difference = end_datetime - start_datetime
         secs = round(difference.total_seconds(), 0)
         return round(secs / 3600.0, 2)
+
