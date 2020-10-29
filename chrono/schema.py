@@ -1,14 +1,18 @@
 import graphene
 
 from user import schema as user_schema, mutations as user_mutations
+from usergroup import schema as usergroup_schema, mutations as usergroup_mutations
 
 
-class Query(graphene.ObjectType, user_schema.Query,):
+class Query(graphene.ObjectType,
+            user_schema.Query,
+            usergroup_schema.Query):
     pass
 
 
-
-class Mutation(graphene.ObjectType,user_mutations.Mutation,):
+class Mutation(graphene.ObjectType,
+               user_mutations.Mutation,
+               usergroup_mutations.Mutation):
     pass
 
 
