@@ -5,7 +5,7 @@ from graphene_django_extras import (
     DjangoObjectType,
     DjangoFilterListField,
 )
-from graphene_django_extras.paginations import LimitOffsetGraphqlPagination
+#from graphene_django_extras.paginations import LimitOffsetGraphqlPagination
 
 from user.schema import UserType
 from usergroup.schema import UserGroupType
@@ -51,6 +51,12 @@ class TaskListType(DjangoObjectType):
 class TimeEntryType(DjangoObjectType):
     class Meta:
         model = TimeEntry
+        fields = '__all__'
+
+
+class TimeEntryTypeList(DjangoObjectType):
+    class Meta:
+        model = TimeEntry
         filter_fields = {
             "task": ("exact", ),
             "user": ("exact", ),
@@ -62,4 +68,5 @@ class Query(object):
     taskgroup_list = DjangoFilterListField(TaskGroupListType)
     task = DjangoObjectField(TaskType)
     task_list = DjangoFilterListField(TaskListType)
-    timeentry = DjangoFilterListField(TimeEntryType)
+    timeentry = DjangoObjectField(TimeEntryType)
+    timeentry_list = DjangoFilterListField(TimeEntryTypeList)

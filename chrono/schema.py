@@ -2,7 +2,7 @@ import graphene
 
 from user import schema as user_schema, mutations as user_mutations
 from usergroup import schema as usergroup_schema, mutations as usergroup_mutations
-from task import schema as task_schema
+from task import schema as task_schema, mutations as task_mutations
 
 
 class Query(graphene.ObjectType,
@@ -14,7 +14,8 @@ class Query(graphene.ObjectType,
 
 class Mutation(graphene.ObjectType,
                user_mutations.Mutation,
-               usergroup_mutations.Mutation):
+               usergroup_mutations.Mutation,
+               task_mutations.Mutation,):
     pass
 
 

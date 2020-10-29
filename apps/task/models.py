@@ -25,8 +25,8 @@ class TaskGroup(BaseModel):
 
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    start_date = models.DateField()
-    end_date = models.DateField()
+    start_date = models.DateField(blank=True, null=True)
+    end_date = models.DateField(blank=True, null=True)
     status = enum.EnumField(STATUS, null=True)
     users = models.ManyToManyField(User, blank=True,)
     user_group = models.ManyToManyField(UserGroup, blank=True,)
@@ -46,8 +46,10 @@ class Task(BaseModel):
     description = models.TextField(blank=True)
     external_url = models.URLField(max_length=255,
                                    blank=True, null=True)
-    task_group = models.ForeignKey(TaskGroup, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    task_group = models.ForeignKey(TaskGroup, on_delete=models.CASCADE,
+                                    blank=True, null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE,
+                             blank=True, null=True)
     # need to create Tag model
     #tags = model.ManyToManyField(Tag, blank=True)
 
@@ -61,8 +63,10 @@ class TimeEntry(models.Model):
     start_time = models.TimeField()
     end_time = models.TimeField(default=None, blank=True,
                                 null=True)
-    task = models.ForeignKey(Task, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    task = models.ForeignKey(Task, on_delete=models.CASCADE,
+                             blank=True, null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE,
+                             blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
 
