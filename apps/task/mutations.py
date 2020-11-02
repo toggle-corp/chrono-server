@@ -11,7 +11,7 @@ from task.schema import (
     TaskListType,
     TimeEntryType,
 )
-from task.serializers import(
+from task.serializers import (
     TaskSerializer,
     TaskGroupSerializer,
     TimeEntrySerializer,
@@ -33,7 +33,7 @@ class TaskCreateInputType(graphene.InputObjectType):
     modified_by = graphene.ID()
 
 
-class TaskUpdateInpuType(graphene.InputObjectType):
+class TaskUpdateInputType(graphene.InputObjectType):
     """
     Task Update Input Type
     """
@@ -54,6 +54,8 @@ class TaskGroupCreateInputType(graphene.InputObjectType):
     status = graphene.NonNull(StatusGrapheneEnum)
     users = graphene.List(graphene.ID, required=False)
     user_group = graphene.List(graphene.ID, required=False)
+    created_by = graphene.ID()
+    modified_by = graphene.ID()
 
 
 class TaskGroupUpdateInputType(graphene.InputObjectType):
@@ -177,7 +179,7 @@ class CreateTask(graphene.Mutation):
 
 class UpdateTask(graphene.Mutation):
     class Arguments:
-        task = TaskUpdateInpuType(required=True)
+        task = TaskUpdateInputType(required=True)
 
     errors = graphene.List(CustomErrorType)
     ok = graphene.Boolean()
@@ -190,7 +192,7 @@ class UpdateTask(graphene.Mutation):
         except Task.DoesNotExist:
             return UpdateTask(errors=[
                 CustomErrorType(field='non_field_errors',
-                                messages=[gettext('UserGroup does not exist.')])
+                                messages=[gettext('Task does not exist.')])
             ])
         serializer = TaskSerializer(instance=instance,
                                     data=task,

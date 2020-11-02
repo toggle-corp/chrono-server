@@ -11,6 +11,7 @@ from user.schema import UserType
 from usergroup.schema import UserGroupType
 from task.models import TaskGroup, Task, TimeEntry
 from task.enums import StatusGrapheneEnum
+from task.filters import TaskFilter, TaskGroupFilter, TimeEntryFilter
 
 
 class TaskGroupType(DjangoObjectType):
@@ -24,11 +25,7 @@ class TaskGroupType(DjangoObjectType):
 class TaskGroupListType(DjangoObjectType):
     class Meta:
         model = TaskGroup
-        filter_fields = {
-            "title": ("icontains", ),
-            "start_date": ("lte", "gte"),
-            "end_date": ("lte", "gte"),
-        }
+        filterset_class = TaskGroupFilter
 
 
 class TaskType(DjangoObjectType):
@@ -40,12 +37,7 @@ class TaskType(DjangoObjectType):
 class TaskListType(DjangoObjectType):
     class Meta:
         model = Task
-        filter_fields = {
-            "id": ("exact", ),
-            "title": ("icontains", ),
-            "user": ("exact", ),
-            "task_group": ("exact", )
-        }
+        filterset_class = TaskFilter
 
 
 class TimeEntryType(DjangoObjectType):
@@ -57,10 +49,7 @@ class TimeEntryType(DjangoObjectType):
 class TimeEntryTypeList(DjangoObjectType):
     class Meta:
         model = TimeEntry
-        filter_fields = {
-            "task": ("exact", ),
-            "user": ("exact", ),
-        }
+        filterset_class = TimeEntryFilter
 
 
 class Query(object):
@@ -70,3 +59,4 @@ class Query(object):
     task_list = DjangoFilterListField(TaskListType)
     timeentry = DjangoObjectField(TimeEntryType)
     timeentry_list = DjangoFilterListField(TimeEntryTypeList)
+    

@@ -114,4 +114,3 @@ class TimeEntry(models.Model):
         difference = end_datetime - start_datetime
         secs = round(difference.total_seconds(), 0)
         return round(secs / 3600.0, 2)
-
