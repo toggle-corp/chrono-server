@@ -41,6 +41,7 @@ LOCAL_APPS = [
     'user',
     'usergroup',
     'task',
+    'project'
 ]
 
 
