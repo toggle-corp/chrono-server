@@ -1,7 +1,11 @@
 from django.db import models
 
 from utils.models import BaseModel
+<<<<<<< HEAD
 from usergroup.models import UserGroup, GroupMember
+=======
+from usergroup.models import UserGroup
+>>>>>>> Model and schema setup
 
 
 class Client(models.Model):
@@ -31,7 +35,11 @@ class Project(BaseModel):
     @staticmethod
     def get_for(user):
         """
+<<<<<<< HEAD
         Project accessible if user is
+=======
+        Project accessible if user is 
+>>>>>>> Model and schema setup
         member of the group
         """
         return Project.objects.filter(
@@ -50,7 +58,25 @@ class Tag(BaseModel):
                                 blank=True, null=True)
 
     class Meta:
+<<<<<<< HEAD
         unique_together = (('title','project'), )
 
     def __str__(self):
         return f'{self.project.title} {self.title}'
+=======
+        unique_together = (('title','project'),)
+
+    def __str__(self):
+        return f'{self.project.title} {self.title}'
+
+    @staticmethod
+    def get_for(user):
+        """
+        Tag can be accessed only if
+        user is member of group in the project tag
+        """
+        projects = Project.get_for(user)
+        return Tag.objects.filter(
+            projects__in=[projects]
+        )
+>>>>>>> Model and schema setup
