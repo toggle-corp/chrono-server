@@ -1,7 +1,9 @@
+from collections import OrderedDict
+
 from django.db import models
 from django.core.exceptions import ValidationError
 from django_enumfield import enum
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _, gettext
 
 
 from user.models import User
@@ -50,8 +52,6 @@ class Task(BaseModel):
                                     blank=True, null=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE,
                              blank=True, null=True)
-    # need to create Tag model
-    #tags = model.ManyToManyField(Tag, blank=True)
 
     def __str__(self):
         return self.title
@@ -74,41 +74,40 @@ class TimeEntry(models.Model):
     def __str__(self):
         return f'{self.task.title} by {str(self.user)} {str(self.start_time)}'
 
-    def clean(self):
-        # TODO : Check for the overlap
-        if self.end_time and self.start_time > self.end_time:
-            raise ValidationError('Start time should be less than End time')
+    @staticmethod
+    def clean_dates(values, instance=None):
+        errors = OrderedDict()
+        start_time = values.get('start_time', getattr(instance, 'start_time', None))
+        end_time = values.get('end_time', getattr(instance, 'end_time', None))
+        date = values.get('date', getattr(instance, 'date', None))
+        user = values.get('user',getattr(instance, 'date', None))
+        if end_time and start_time > end_time:
+            errors['end_time'] = gettext('start_time must be less than end_time')
 
         time_check = models.Q(
-            start_time__lt=self.start_time,
-            end_time__gt=self.start_time
+            start_time__lt=start_time,
+            end_time__gt=start_time
         )
-        # if provided end_time 
-        if self.end_time:
+        # provided the end_time
+        if end_time:
             time_check |= models.Q(
-                start_time__lt=self.end_time,
-                end_time__gt=self.end_time
+                start_time__lt=end_time,
+                end_time__gt=end_time
             )
+        if TimeEntry.objects.filter(
+                time_check,
+                date=date,
+                user=user,
+                ).exists():
+            errors['date'] = gettext('This time slot overlaps with another '
+                                  'for this day')
 
-        if TimeEntry.objects.exclude(pk=self.pk).filter(
-            time_check,
-            user=self.user,
-            task__task_group=self.task.task_group,
-            date=self.date,
-            ).exists():
-            raise ValidationError("Time  Entry overlap for another in this day")
-
-    def total_time(self):
-        return (
-            datetime.combine(datetime.now(), self.end_time) -
-            datetime.combine(datetime.now(), self.start_time)
-        )
-
-    def total_time_in_sec(self):
-        return self.total_time().total_seconds()
+        return errors
 
     @property
     def duration(self):
+        if not end_time:
+            return 0
         end_datetime = datetime.combine(self.date, self.end_time)
         start_datetime = datetime.combine(self.date, self.start_time)
         difference = end_datetime - start_datetime
