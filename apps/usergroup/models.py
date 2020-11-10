@@ -19,6 +19,10 @@ class UserGroup(models.Model):
     def __str__(self):
         return self.title
 
+    @staticmethod
+    def get_for(user):
+        return UserGroup.objects.filter(members=user).distinct()
+
 
 class GroupMember(models.Model):
     """

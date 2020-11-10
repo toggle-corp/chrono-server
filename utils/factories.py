@@ -14,6 +14,27 @@ class UserGroupFactory(DjangoModelFactory):
     class Meta:
         model = 'usergroup.UserGroup'
 
+    members = factory.SubFactory(UserFactory)
+
+    @factory.post_generation
+    def members(self, create, extracted, **kwargs):
+        if not create:
+            # Simple build, do nothing.
+            return
+
+        if extracted:
+            # A list of groups were passed in, use them
+            for member in extracted:
+                self.members.add(member)
+
+
+class GroupMemeberFactory(DjangoModelFactory):
+    class Meta:
+        model = 'usergroup.GroupMember'
+
+    member = factory.SubFactory(UserFactory)
+    group = factory.SubFactory(UserGroupFactory)
+
 
 class TaskGroupFactory(DjangoModelFactory):
     class Meta:
@@ -43,3 +64,35 @@ class TimeEntryFactory(DjangoModelFactory):
     task = factory.SubFactory(TaskFactory)
     start_time = factory.Faker('time')
     date = factory.Faker('date')
+
+
+class ClientFactory(DjangoModelFactory):
+    class Meta:
+        model = 'project.Client'
+
+
+class ProjectFactory(DjangoModelFactory):
+    class Meta:
+        model = 'project.Project'
+
+    title = factory.Faker('name')
+    client = factory.SubFactory(ClientFactory)
+    user_group = factory.SubFactory(UserGroupFactory)
+
+    @factory.post_generation
+    def user_group(self, create, extracted, **kwargs):
+        if not create:
+            # Simple build, do nothing.
+            return
+
+        if extracted:
+            # A list of groups were passed in, use them
+            for group in extracted:
+                self.user_group.add(group)
+
+
+class TagFactory(DjangoModelFactory):
+    class Meta:
+        model = 'project.Tag'
+
+    project = factory.SubFactory(ProjectFactory)

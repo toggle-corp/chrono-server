@@ -9,4 +9,4 @@ class ProjectFilter(django_filters.FilterSet):
 
     class Meta:
         model = Project
-        fields = ['user_group__members', 'client']
+        fields = ['client', ]
