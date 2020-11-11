@@ -73,7 +73,7 @@ class UpdateClient(graphene.Mutation):
             instance = Client.objects.get(id=data['id'])
         except Client.DoesNotExist:
             return UpdateClient(errors=[
-                CustomErrorType(field='non_field_errors',
+                CustomErrorType(field='nonFieldErrors',
                 messages=[gettext('Client does not exist.')])
             ])
         serializer = ClientSerializer(instance=instance,
@@ -99,7 +99,7 @@ class DeleteClient(graphene.Mutation):
             instance = Client.objects.get(id=id)
         except Client.DoesNotExist:
             return DeleteClient(errors=[
-                CustomErrorType(field='non_field_errors',
+                CustomErrorType(field='nonFieldErrors',
                                 messages=gettext('Client does not exist'))
             ])
         instance.delete()
@@ -163,7 +163,7 @@ class UpdateProject(graphene.Mutation):
             instance = Project.objects.get(id=data['id'])
         except Project.DoesNotExist:
             return UpdateClient(errors=[
-                CustomErrorType(field='non_field_errors',
+                CustomErrorType(field='nonFieldErrors',
                                 messages=gettext('Project Does not exist'))
             ])
         serializer = ProjectSerializer(instance=instance,
@@ -192,7 +192,7 @@ class DeleteProject(graphene.Mutation):
             instance = Project.objects.get(id=id)
         except Project.DoesNotExist:
             return DeleteProject(errors=[
-                CustomErrorType(field='non_field_errors',
+                CustomErrorType(field='nonFieldErrors',
                                 messages=gettext('Project does not Exist'))
             ])
         instance.delete()
@@ -253,7 +253,7 @@ class UpdateTag(graphene.Mutation):
             instance = Tag.objects.get(id=data['id'])
         except Tag.DoesNotExist:
             return UpdateTag(errors=[
-                CustomErrorType(field='non_field_errors',
+                CustomErrorType(field='nonFieldErrors',
                                 messages=gettext('Tag does not exist'))
             ])
         serializer = TagSerializer(instance=instance, data=data,
@@ -279,7 +279,7 @@ class DeleteTag(graphene.Mutation):
             instance = Tag.objects.get(id=id)
         except Tag.DoesNotExist:
             return DeleteTag(errors=[
-                CustomErrorType(field='non_field_errors',
+                CustomErrorType(field='nonFieldErrors',
                                 messages=gettext('Tag does not Exist'))
             ])
         instance.delete()

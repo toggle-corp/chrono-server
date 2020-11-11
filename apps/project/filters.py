@@ -9,8 +9,5 @@ class ProjectFilter(django_filters.FilterSet):
 
     class Meta:
         model = Project
-<<<<<<< HEAD
         fields = ['client', ]
-=======
-        fields = ['user_group__members', 'client']
->>>>>>> Model and schema setup
+
