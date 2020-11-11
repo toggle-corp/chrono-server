@@ -18,6 +18,10 @@ class UserType(DjangoObjectType):
             'password',
         )
 
+    @staticmethod
+    def get_queryset(queryset, info):
+        return queryset
+
 
 class Query(object):
     profile = graphene.Field(UserType)

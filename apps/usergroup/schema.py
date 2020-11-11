@@ -10,6 +10,10 @@ class UserGroupType(DjangoObjectType):
         model = UserGroup
         fields = '__all__'
 
+    @staticmethod
+    def get_queryset(queryset, info):
+        return queryset
+
 
 class GroupMemberType(DjangoObjectType):
     class Meta:

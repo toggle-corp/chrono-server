@@ -40,6 +40,7 @@ CORS_ALLOW_CREDENTIALS = True
 LOCAL_APPS = [
     'user',
     'usergroup',
+    'task',
 ]
 
 

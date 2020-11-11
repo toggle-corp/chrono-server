@@ -1,5 +1,5 @@
 from django.db import models
-from django.contib.auth.models import User
+from user.models import User
 
 
 class BaseModel(models.Model):
@@ -8,14 +8,15 @@ class BaseModel(models.Model):
     created_by = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='%(class)s_created_by'
+        related_name='%(class)s_created_by',
+        blank=True, null=True,
     )
     modified_by = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='%(class)s_modified_by'
+        related_name='%(class)s_modified_by',
+        blank=True, null=True,
     )
 
     class Meta:
         abstract = True
-        
