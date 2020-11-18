@@ -32,6 +32,7 @@ class Query(object):
 
     def resolve_groups(self, info, **kwargs):
         id = kwargs.get('id')
+        print("id", id)
         if id is not None:
             return GroupMember.objects.get(pk=id)
         return None

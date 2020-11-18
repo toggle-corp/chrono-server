@@ -6,6 +6,7 @@ from utils.factories import (
     TaskGroupFactory,
     TaskFactory,
     TimeEntryFactory,
+    ProjectFactory,
 )
 
 
@@ -18,12 +19,12 @@ class TestCreateTask(ChronoGraphQLTestCase):
     def setUp(self):
         self.user = UserFactory.create().id
         self.mutation = '''mutation CreateTask($input: TaskCreateInputType!){
-            createTask(task: $input){
+            createTask(data: $input){
                 errors {
                     field
                     messages
                 }
-                task {
+                result {
                     id
                     title
                     description
@@ -61,21 +62,21 @@ class TestCreateTask(ChronoGraphQLTestCase):
         self.assertResponseNoErrors(response)
         self.assertTrue(content['data']['createTask']['ok'], content)
         self.assertIsNone(content['data']['createTask']['errors'], content)
-        self.assertEqual(content['data']['createTask']['task']['title'],
+        self.assertEqual(content['data']['createTask']['result']['title'],
                          self.input['title'])
-        self.assertEqual(content['data']['createTask']['task']['createdBy']['id'], 
+        self.assertEqual(content['data']['createTask']['result']['createdBy']['id'], 
                           str(self.input['createdBy']))
 
 
 class TestUpdateTask(ChronoGraphQLTestCase):
     def setUp(self):
         self.mutation = '''mutation UpdateTask($input: TaskUpdateInputType!){
-            updateTask(task: $input){
+            updateTask(data: $input){
                 errors {
                     field
                     messages
                 }
-                task {
+                result {
                     id
                     title
                     description
@@ -111,9 +112,9 @@ class TestUpdateTask(ChronoGraphQLTestCase):
         self.assertResponseNoErrors(response)
         self.assertTrue(content['data']['updateTask']['ok'], content)
         self.assertIsNone(content['data']['updateTask']['errors'], content)
-        self.assertEqual(content['data']['updateTask']['task']['id'],
+        self.assertEqual(content['data']['updateTask']['result']['id'],
                          str(self.input['id']))
-        self.assertEqual(content['data']['updateTask']['task']['user']['id'],
+        self.assertEqual(content['data']['updateTask']['result']['user']['id'],
                          str(self.input['user']))
 
 
@@ -125,7 +126,7 @@ class TestDeleteTask(ChronoGraphQLTestCase):
                     field
                     messages
                 }
-                task {
+                result {
                     id
                     title
                     description
@@ -156,9 +157,9 @@ class TestDeleteTask(ChronoGraphQLTestCase):
         content = json.loads(response.content)
         self.assertTrue(content['data']['deleteTask']['ok'], content)
         self.assertIsNone(content['data']['deleteTask']['errors'], content)
-        self.assertEqual(content['data']['deleteTask']['task']['title'],
+        self.assertEqual(content['data']['deleteTask']['result']['title'],
                          self.task.title)
-        self.assertEqual(int(content['data']['deleteTask']['task']['id']),
+        self.assertEqual(int(content['data']['deleteTask']['result']['id']),
                          self.task.id)
 
 
@@ -211,12 +212,12 @@ class TestTakGroupCreate(ChronoGraphQLTestCase):
         users = UserFactory.create_batch(2)
         self.user1 = UserFactory.create().id
         self.mutation = '''mutation CreateTaskGroup($input: TaskGroupCreateInputType!){
-            createTaskgroup(taskGroup: $input){
+            createTaskgroup(data: $input){
                 errors {
                     field
                     messages
                 }
-                taskGroup {
+                result {
                     id
                     title
                     description
@@ -246,6 +247,7 @@ class TestTakGroupCreate(ChronoGraphQLTestCase):
             "users": [i.id for i in users],
             "startDate": "2020-10-01",
             "endDate": "2020-10-20",
+            "project": ProjectFactory.create().id,
         }
 
     def test_valid_taskgroup_creation(self):
@@ -258,21 +260,21 @@ class TestTakGroupCreate(ChronoGraphQLTestCase):
         self.assertResponseNoErrors(response)
         self.assertTrue(content['data']['createTaskgroup']['ok'], content)
         self.assertIsNone(content['data']['createTaskgroup']['errors'], content)
-        self.assertEqual(content['data']['createTaskgroup']['taskGroup']['title'],
+        self.assertEqual(content['data']['createTaskgroup']['result']['title'],
                          self.input['title'])
-        self.assertEqual(content['data']['createTaskgroup']['taskGroup']['createdBy']['id'],
+        self.assertEqual(content['data']['createTaskgroup']['result']['createdBy']['id'],
                           str(self.input['createdBy']))
 
 
 class TaskGroupUpdate(ChronoGraphQLTestCase):
     def setUp(self):
         self.mutation = '''mutation UpdateTaskGroup($input: TaskGroupUpdateInputType!){
-            updateTaskgroup(taskGroup: $input){
+            updateTaskgroup(data: $input){
                 errors {
                     field
                     messages
                 }
-                taskGroup {
+                result {
                     id
                     title
                     description
@@ -302,9 +304,9 @@ class TaskGroupUpdate(ChronoGraphQLTestCase):
         self.assertResponseNoErrors(response)
         self.assertTrue(content['data']['updateTaskgroup']['ok'], content)
         self.assertIsNone(content['data']['updateTaskgroup']['errors'], content)
-        self.assertEqual(content['data']['updateTaskgroup']['taskGroup']['id'],
+        self.assertEqual(content['data']['updateTaskgroup']['result']['id'],
                          str(self.input['id']))
-        self.assertEqual(content['data']['updateTaskgroup']['taskGroup']['users'][0]['id'],
+        self.assertEqual(content['data']['updateTaskgroup']['result']['users'][0]['id'],
                          str(self.input['users']))
 
 
@@ -316,7 +318,7 @@ class TestDeleteTaskGroup(ChronoGraphQLTestCase):
                     field
                     messages
                 }
-                taskGroup {
+                result {
                     id
                     title
                     description
@@ -341,9 +343,9 @@ class TestDeleteTaskGroup(ChronoGraphQLTestCase):
         content = json.loads(response.content)
         self.assertTrue(content['data']['deleteTaskgroup']['ok'], content)
         self.assertIsNone(content['data']['deleteTaskgroup']['errors'], content)
-        self.assertEqual(content['data']['deleteTaskgroup']['taskGroup']['title'],
+        self.assertEqual(content['data']['deleteTaskgroup']['result']['title'],
                          self.taskGroup.title)
-        self.assertEqual(int(content['data']['deleteTaskgroup']['taskGroup']['id']),
+        self.assertEqual(int(content['data']['deleteTaskgroup']['result']['id']),
                          self.taskGroup.id)
 
 
@@ -355,12 +357,12 @@ Test Case for the TimeEntry
 class TimeEntryCreate(ChronoGraphQLTestCase):
     def setUp(self):
         self.mutation = '''mutation CreateTimeEntry($input: TimeEntryCreateInputType!){
-            createTimeentry(timeEntry: $input){
+            createTimeentry(data: $input){
                 errors {
                     field
                     messages
                 }
-                timeEntry {
+                result {
                     id
                     description
                     user{
@@ -393,19 +395,19 @@ class TimeEntryCreate(ChronoGraphQLTestCase):
         self.assertResponseNoErrors(response)
         self.assertTrue(content['data']['createTimeentry']['ok'], content)
         self.assertIsNone(content['data']['createTimeentry']['errors'], content)
-        self.assertEqual(content['data']['createTimeentry']['timeEntry']['task']['id'],
+        self.assertEqual(content['data']['createTimeentry']['result']['task']['id'],
                          str(self.input['task']))
 
 
 class UpdateTimeEntry(ChronoGraphQLTestCase):
     def setUp(self):
         self.mutation = '''mutation UpdateTimeEntry($input: TimeEntryUpdateInputType!){
-            updateTimeentry(timeEntry: $input){
+            updateTimeentry(data: $input){
                 errors {
                     field
                     messages
                 }
-                timeEntry {
+                result {
                     id
                     description
                     user{
@@ -438,9 +440,9 @@ class UpdateTimeEntry(ChronoGraphQLTestCase):
         self.assertResponseNoErrors(response)
         self.assertTrue(content['data']['updateTimeentry']['ok'], content)
         self.assertIsNone(content['data']['updateTimeentry']['errors'], content)
-        self.assertEqual(content['data']['updateTimeentry']['timeEntry']['task']['id'],
+        self.assertEqual(content['data']['updateTimeentry']['result']['task']['id'],
                          str(self.input['task']))
-        self.assertEqual(content['data']['updateTimeentry']['timeEntry']['id'],
+        self.assertEqual(content['data']['updateTimeentry']['result']['id'],
                          str(self.input['id']))
 
 
@@ -452,7 +454,7 @@ class DeleteTimeEntry(ChronoGraphQLTestCase):
                     field
                     messages
                 }
-                timeEntry {
+                result {
                     id
                     description
                 }
@@ -473,7 +475,7 @@ class DeleteTimeEntry(ChronoGraphQLTestCase):
         content = json.loads(response.content)
         self.assertTrue(content['data']['deleteTimeentry']['ok'], content)
         self.assertIsNone(content['data']['deleteTimeentry']['errors'], content)
-        self.assertEqual(content['data']['deleteTimeentry']['timeEntry']['description'],
+        self.assertEqual(content['data']['deleteTimeentry']['result']['description'],
                          self.timeEntry.description)
-        self.assertEqual(int(content['data']['deleteTimeentry']['timeEntry']['id']),
+        self.assertEqual(int(content['data']['deleteTimeentry']['result']['id']),
                          self.timeEntry.id)

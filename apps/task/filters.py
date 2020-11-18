@@ -42,9 +42,15 @@ class TaskGroupFilter(django_filters.FilterSet):
 
 
 class TimeEntryFilter(django_filters.FilterSet):
+    date_lte = django_filters.CharFilter(
+                     field_name='date',
+                     lookup_expr='lte'
+    )
+    date_gte = django_filters.CharFilter(
+                     field_name='date',
+                     lookup_expr='gte'
+    )
+
     class Meta:
         model = TimeEntry
-        fields = {
-            "task": ("exact", ),
-            "user": ("exact", ),
-        }
+        fields = ()

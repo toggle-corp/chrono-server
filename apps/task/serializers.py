@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from datetime import datetime
 
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
@@ -19,6 +20,7 @@ class TaskGroupSerializer(serializers.ModelSerializer):
 
 
 class TimeEntrySerializer(serializers.ModelSerializer):
+
     class Meta:
         model = TimeEntry
         fields = '__all__'

@@ -1,6 +1,8 @@
 from collections import OrderedDict
+from datetime import datetime
 
 from django.db import models
+from django.db.models import F, Sum
 from django.core.exceptions import ValidationError
 from django_enumfield import enum
 from django.utils.translation import gettext_lazy as _, gettext
@@ -8,6 +10,8 @@ from django.utils.translation import gettext_lazy as _, gettext
 
 from user.models import User
 from usergroup.models import UserGroup
+
+from project.models import Project
 
 from utils.models import BaseModel
 
@@ -32,6 +36,8 @@ class TaskGroup(BaseModel):
     status = enum.EnumField(STATUS, null=True)
     users = models.ManyToManyField(User, blank=True,)
     user_group = models.ManyToManyField(UserGroup, blank=True,)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE,
+                                blank=True, null=True)
 
     def __str__(self):
         return self.title
@@ -99,17 +105,16 @@ class TimeEntry(models.Model):
                 date=date,
                 user=user,
                 ).exists():
-            errors['date'] = gettext('This time slot overlaps with another '
-                                  'for this day')
+            errors['date'] = gettext('This time entry overlaps with another '
+                                     'for this day')
 
         return errors
 
     @property
     def duration(self):
-        if not end_time:
+        if not self.end_time:
             return 0
         end_datetime = datetime.combine(self.date, self.end_time)
         start_datetime = datetime.combine(self.date, self.start_time)
         difference = end_datetime - start_datetime
-        secs = round(difference.total_seconds(), 0)
-        return round(secs / 3600.0, 2)
+        return difference
