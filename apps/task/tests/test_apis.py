@@ -479,3 +479,18 @@ class DeleteTimeEntry(ChronoGraphQLTestCase):
                          self.timeEntry.description)
         self.assertEqual(int(content['data']['deleteTimeentry']['result']['id']),
                          self.timeEntry.id)
+
+
+"""Summary api"""
+
+
+class TestSummaryAPI(ChronoGraphQLTestCase):
+    def setUp(self):
+        self.q = """
+            Write my query here
+        """
+        # setup fixtures here
+        self.time_entries = ...
+
+    def test_summary_api_reponse_structure(self):
+        ...
