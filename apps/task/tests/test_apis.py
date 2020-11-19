@@ -486,11 +486,65 @@ class DeleteTimeEntry(ChronoGraphQLTestCase):
 
 class TestSummaryAPI(ChronoGraphQLTestCase):
     def setUp(self):
+        self.user = UserFactory.create()
+        self.task1 = TaskFactory.create(
+            user=self.user,
+        )
+        self.task2 = TaskFactory.create(
+            user=self.user
+        )
+        TimeEntry1 = TimeEntryFactory.create(
+            date='2020-10-10',
+            start_time='10:10:10',
+            end_time='12:10:10',
+            user=self.user,
+            task=self.task1,
+        )
+        TimeEntry2 = TimeEntryFactory.create(
+            date='2020-11-18',
+            start_time='10:10:10',
+            end_time='20:10:10',
+            user=self.user,
+            task=self.task2,
+        )
+
+        # same day for differet task
+        TimeEntry3 = TimeEntryFactory.create(
+            date='2020-10-10',
+            start_time='15:10:10',
+            end_time='20:10:10',
+            user=self.user,
+            task=self.task2,
+        )
+
         self.q = """
-            Write my query here
+            query Summary($dateFrom:Date, $dateTo: Date){
+                summary(dateFrom: $dateFrom, dateTo: $dateTo){
+                    totalHours
+                    totalHoursDay{
+
+                    }
+                }
+            }
         """
         # setup fixtures here
-        self.time_entries = ...
+        # self.time_entries = ...
 
     def test_summary_api_reponse_structure(self):
-        ...
+        variables = {
+            "dateFrom": "2020-09-15",
+            "dateTo": "2020-11-25"
+        }
+        response = self.query(
+            self.q,
+            variables=variables
+        )
+        HOURS_TOTAL = 2 + 10 + 5
+
+        content = json.loads(response.content)
+
+        print(response.content)
+        self.assertResponseNoErrors(response)
+        self.assertEqual(content['data']['summary']['totalHours'], HOURS_TOTAL)
+
+
