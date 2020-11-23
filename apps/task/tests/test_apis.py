@@ -1,4 +1,5 @@
 import json
+from datetime import timedelta
 
 from utils.tests import ChronoGraphQLTestCase
 from utils.factories import (
@@ -486,22 +487,23 @@ class DeleteTimeEntry(ChronoGraphQLTestCase):
 
 class TestSummaryAPI(ChronoGraphQLTestCase):
     def setUp(self):
-        self.user = UserFactory.create()
+        self.user = UserFactory()
+        self.force_login(self.user)
         self.task1 = TaskFactory.create(
             user=self.user,
         )
         self.task2 = TaskFactory.create(
             user=self.user
         )
-        TimeEntry1 = TimeEntryFactory.create(
-            date='2020-10-10',
+        self.timeentry1 = TimeEntryFactory.create(
+            date='2020-11-24',
             start_time='10:10:10',
             end_time='12:10:10',
             user=self.user,
             task=self.task1,
         )
-        TimeEntry2 = TimeEntryFactory.create(
-            date='2020-11-18',
+        self.timeentry2 = TimeEntryFactory.create(
+            date='2020-11-27',
             start_time='10:10:10',
             end_time='20:10:10',
             user=self.user,
@@ -509,8 +511,8 @@ class TestSummaryAPI(ChronoGraphQLTestCase):
         )
 
         # same day for differet task
-        TimeEntry3 = TimeEntryFactory.create(
-            date='2020-10-10',
+        self.timeentry3 = TimeEntryFactory.create(
+            date='2020-11-24',
             start_time='15:10:10',
             end_time='20:10:10',
             user=self.user,
@@ -518,33 +520,33 @@ class TestSummaryAPI(ChronoGraphQLTestCase):
         )
 
         self.q = """
-            query Summary($dateFrom:Date, $dateTo: Date){
-                summary(dateFrom: $dateFrom, dateTo: $dateTo){
+            query Summary{
+                summary {
                     totalHours
-                    totalHoursDay{
-
+                    totalHoursDay {
+                        date
+                        durationDay
+                        taskList {
+                            id
+                            duration
+                        }
                     }
                 }
             }
         """
-        # setup fixtures here
-        # self.time_entries = ...
 
     def test_summary_api_reponse_structure(self):
-        variables = {
-            "dateFrom": "2020-09-15",
-            "dateTo": "2020-11-25"
-        }
         response = self.query(
-            self.q,
-            variables=variables
+            self.q
         )
-        HOURS_TOTAL = 2 + 10 + 5
+        
+        hours1 = timedelta(hours=2, minutes=00, seconds=00)
+        hour2 = timedelta(hours=10, minutes=00, seconds=00)
+        hour3 = timedelta(hours=5, minutes=00, seconds=00)
+        HOURS_TOTAL = hours1 + hour2 + hour3
 
         content = json.loads(response.content)
-
-        print(response.content)
         self.assertResponseNoErrors(response)
-        self.assertEqual(content['data']['summary']['totalHours'], HOURS_TOTAL)
-
-
+        self.assertEqual(content['data']['summary']['totalHours'], str(HOURS_TOTAL))
+        self.assertEqual(content['data']['summary']['totalHoursDay'][0]['date'],
+        self.timeentry1.date)
