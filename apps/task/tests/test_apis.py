@@ -1,5 +1,6 @@
 import json
-from datetime import timedelta
+from datetime import datetime, timedelta, time
+
 
 from utils.tests import ChronoGraphQLTestCase
 from utils.factories import (
@@ -496,33 +497,42 @@ class TestSummaryAPI(ChronoGraphQLTestCase):
             user=self.user
         )
         self.timeentry1 = TimeEntryFactory.create(
-            date='2020-11-24',
-            start_time='10:10:10',
-            end_time='12:10:10',
+            date=datetime.now().date() + timedelta(days=2),
+            start_time=time(10, 10, 10),
+            end_time=time(12, 10, 10),
             user=self.user,
             task=self.task1,
         )
         self.timeentry2 = TimeEntryFactory.create(
-            date='2020-11-27',
-            start_time='10:10:10',
-            end_time='20:10:10',
+            date=datetime.now().date() + timedelta(days=3),
+            start_time=time(10, 10, 10),
+            end_time=time(20, 10, 10),
             user=self.user,
             task=self.task2,
         )
 
         # same day for differet task
         self.timeentry3 = TimeEntryFactory.create(
-            date='2020-11-24',
-            start_time='15:10:10',
-            end_time='20:10:10',
+            date=datetime.now().date() + timedelta(days=2),
+            start_time=time(15, 10, 10),
+            end_time=time(20, 10, 10),
+            user=self.user,
+            task=self.task2,
+        )
+
+        # create timeentry for the next month
+        self.timeentry4 = TimeEntryFactory.create(
+            date=datetime.now().date() + timedelta(days=20),
+            start_time=time(15, 10, 10),
+            end_time=time(20, 10, 10),
             user=self.user,
             task=self.task2,
         )
 
         self.q = """
-            query Summary{
-                summary {
-                    totalHours
+            query SummaryWeekly{
+                summaryWeekly {
+                    totalHoursWeekly
                     totalHoursDay {
                         date
                         durationDay
@@ -535,18 +545,86 @@ class TestSummaryAPI(ChronoGraphQLTestCase):
             }
         """
 
-    def test_summary_api_reponse_structure(self):
+        self.q1 = """
+            query SummaryMonthly{
+                summaryMonthly {
+                    totalHoursMonthly
+                    totalHoursDay {
+                        date
+                        durationDay
+                        taskList {
+                            id
+                            duration
+                        }
+                    }
+                }
+            }
+
+        """
+
+    def test_weekly_summary_api_reponse_structure(self):
         response = self.query(
             self.q
         )
-        
-        hours1 = timedelta(hours=2, minutes=00, seconds=00)
-        hour2 = timedelta(hours=10, minutes=00, seconds=00)
-        hour3 = timedelta(hours=5, minutes=00, seconds=00)
+
+        hours1 = datetime.combine(self.timeentry1.date, self.timeentry1.end_time)\
+                - datetime.combine(self.timeentry1.date, self.timeentry1.start_time)
+
+        hour2 = datetime.combine(self.timeentry2.date, self.timeentry2.end_time)\
+                - datetime.combine(self.timeentry2.date, self.timeentry2.start_time)
+        hour3 = datetime.combine(self.timeentry3.date, self.timeentry3.end_time)\
+                - datetime.combine(self.timeentry3.date, self.timeentry3.start_time)
+
         HOURS_TOTAL = hours1 + hour2 + hour3
 
         content = json.loads(response.content)
         self.assertResponseNoErrors(response)
-        self.assertEqual(content['data']['summary']['totalHours'], str(HOURS_TOTAL))
-        self.assertEqual(content['data']['summary']['totalHoursDay'][0]['date'],
-        self.timeentry1.date)
+        self.assertEqual(content['data']['summaryWeekly']['totalHoursWeekly'], str(HOURS_TOTAL))
+        self.assertEqual(content['data']['summaryWeekly']['totalHoursDay'][0]['date'],
+        str(self.timeentry1.date))
+
+    def test_monthly_summary_api_reponse_structure(self):
+        response = self.query(
+            self.q1
+        )
+
+        hours1 = datetime.combine(self.timeentry1.date, self.timeentry1.end_time)\
+                - datetime.combine(self.timeentry1.date, self.timeentry1.start_time)
+
+        hour2 = datetime.combine(self.timeentry2.date, self.timeentry2.end_time)\
+                - datetime.combine(self.timeentry2.date, self.timeentry2.start_time)
+        hour3 = datetime.combine(self.timeentry3.date, self.timeentry3.end_time)\
+                - datetime.combine(self.timeentry3.date, self.timeentry3.start_time)
+
+        HOURS_TOTAL = hours1 + hour2 + hour3
+        HOURS_DAY = hours1 + hour3
+
+        content = json.loads(response.content)
+        self.assertResponseNoErrors(response)
+        self.assertEqual(content['data']['summaryMonthly']['totalHoursMonthly'], str(HOURS_TOTAL))
+        self.assertEqual(content['data']['summaryMonthly']['totalHoursDay'][0]['date'],
+        str(self.timeentry1.date))
+        self.assertEqual(content['data']['summaryMonthly']['totalHoursDay'][0]['durationDay'],
+        str(HOURS_DAY))
+
+    def test_monthly_summary_with_timeentry_another_month(self):
+        response = self.query(
+            self.q1
+        )
+
+        hours1 = datetime.combine(self.timeentry1.date, self.timeentry1.end_time)\
+                - datetime.combine(self.timeentry1.date, self.timeentry1.start_time)
+
+        hour2 = datetime.combine(self.timeentry2.date, self.timeentry2.end_time)\
+                - datetime.combine(self.timeentry2.date, self.timeentry2.start_time)
+        hour3 = datetime.combine(self.timeentry3.date, self.timeentry3.end_time)\
+                - datetime.combine(self.timeentry3.date, self.timeentry3.start_time)
+        hour4 = datetime.combine(self.timeentry4.date, self.timeentry4.end_time)\
+                - datetime.combine(self.timeentry4.date, self.timeentry4.start_time)
+
+
+        HOURS_TOTAL = hours1 + hour2 + hour3 + hour4
+
+        content = json.loads(response.content)
+        self.assertResponseNoErrors(response)
+        self.assertNotEqual(content['data']['summaryMonthly']['totalHoursMonthly'], str(HOURS_TOTAL))

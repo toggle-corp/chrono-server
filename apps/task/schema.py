@@ -1,6 +1,9 @@
 import datetime
+from dateutil.relativedelta import relativedelta
+
 
 from django.db.models import F, Sum, DurationField
+from django.utils.timezone import now
 
 import graphene
 from graphene_django import DjangoObjectType
@@ -77,8 +80,13 @@ class SummaryDay(graphene.ObjectType):
         return queryset
 
 
-class SummaryType(graphene.ObjectType):
-    total_hours = graphene.String()
+class SummaryWeekType(graphene.ObjectType):
+    total_hours_weekly = graphene.String()
+    total_hours_day = graphene.List(SummaryDay)
+
+
+class SummaryMonthType(graphene.ObjectType):
+    total_hours_monthly = graphene.String()
     total_hours_day = graphene.List(SummaryDay)
 
 
@@ -89,7 +97,8 @@ class Query(object):
     task_user = graphene.List(TaskType)
     task_list = DjangoFilterListField(TaskListType)
     timeentry = DjangoObjectField(TimeEntryType)
-    summary = graphene.Field(SummaryType)
+    summary_weekly = graphene.Field(SummaryWeekType)
+    summary_monthly = graphene.Field(SummaryMonthType)
 
     def resolve_task_user(root, info):
         user = info.context.user
@@ -100,14 +109,14 @@ class Query(object):
                 user=user,
             )
 
-    def resolve_summary(root, info, **kwargs):
+    def resolve_summary_weekly(root, info, **kwargs):
         date = datetime.date.today()
         start_week = date - datetime.timedelta(date.weekday())
         end_week = start_week + datetime.timedelta(6)
         user = info.context.user
         if user.is_authenticated:
             # week total duration
-            queryset_week = TimeEntry.objects.filter(
+            hours_week = TimeEntry.objects.filter(
                 user=user,
                 date__range=[start_week, end_week]
             ).order_by().values('date').annotate(
@@ -117,16 +126,50 @@ class Query(object):
             )['total_duration']
 
             # day total_duration
-            queryset_day = TimeEntry.objects.filter(
+            hours_day = TimeEntry.objects.filter(
                 user=user,
                 date__range=[start_week, end_week]
             ).values('date').order_by('date').annotate(
                 duration_day=Sum(F('end_time') - F('start_time'))
             ).values('date', 'duration_day')
 
-            return SummaryType(
-                total_hours=queryset_week,
-                total_hours_day=queryset_day
+            return SummaryWeekType(
+                total_hours_weekly=hours_week,
+                total_hours_day=hours_day,
+            )
+        else:
+            return None
+
+    def resolve_summary_monthly(root, info, **kwargs):
+        date = datetime.date.today()
+        last_day = date + relativedelta(day=1, months=+1, days=-1)
+        first_day = date + relativedelta(day=1)
+        user = info.context.user
+        if user.is_authenticated:
+
+            # monthly total_duration
+            hours_monthly = TimeEntry.objects.filter(
+                user=user,
+                date__gte=first_day,
+                date__lte=last_day,
+            ).values('date').order_by().annotate(
+                duration=F('end_time') - F('start_time'),
+            ).aggregate(
+                total_duration=Sum(F('duration'))
+            )['total_duration']
+
+            # day total_duration
+            hours_day = TimeEntry.objects.filter(
+                user=user,
+                date__gte=first_day,
+                date__lte=last_day,
+            ).values('date').order_by('date').annotate(
+                duration_day=Sum(F('end_time') - F('start_time'))
+            ).values('date', 'duration_day')
+
+            return SummaryMonthType(
+                total_hours_monthly=hours_monthly,
+                total_hours_day=hours_day
             )
         else:
             return None
