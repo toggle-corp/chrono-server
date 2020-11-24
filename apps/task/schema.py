@@ -19,6 +19,8 @@ from usergroup.schema import UserGroupType
 from task.models import TaskGroup, Task, TimeEntry
 from task.enums import StatusGrapheneEnum
 from task.filters import TaskFilter, TaskGroupFilter, TimeEntryFilter
+from project.schema import ProjectType
+from project.models import Project
 
 
 class TaskGroupType(DjangoObjectType):
@@ -90,6 +92,54 @@ class SummaryMonthType(graphene.ObjectType):
     total_hours_day = graphene.List(SummaryDay)
 
 
+class SummaryWeekDashBoard(graphene.ObjectType):
+    total_hours = graphene.String()
+    total_hours_day = graphene.List(SummaryDay)
+
+    def resolve_total_hours(root, info, **kwargs):
+        date = datetime.date.today()
+        start_week = date - datetime.timedelta(date.weekday())
+        end_week = start_week + datetime.timedelta(6)
+        user = info.context.user
+        if user.is_authenticated:
+            # week total duration
+            hours_week = TimeEntry.objects.filter(
+                user=user,
+                date__range=[start_week, end_week]
+            ).order_by().values('date').annotate(
+                duration=F('end_time') - F('start_time'),
+            ).aggregate(
+                total_duration=Sum(F('duration'))
+            )['total_duration']
+            return hours_week
+            print(hours_week)
+        else:
+            return None
+
+    def resolve_total_hours_day(root, info, **kwargs):
+        date = datetime.date.today()
+        start_week = date - datetime.timedelta(date.weekday())
+        end_week = start_week + datetime.timedelta(6)
+        user = info.context.user
+        if user.is_authenticated:
+            # week total duration
+            hours_day = TimeEntry.objects.filter(
+                user=user,
+                date__range=[start_week, end_week]
+            ).values('date').order_by('date').annotate(
+                duration_day=Sum(F('end_time') - F('start_time'))
+            ).values('date', 'duration_day')
+            return hours_day
+        else:
+            return None
+
+
+class DashBoardType(graphene.ObjectType):
+    this_week = graphene.List(SummaryWeekDashBoard)
+    """project_total = graphene.String()
+    project_individual = graphene.List(ProjectType)"""
+
+
 class Query(object):
     taskgroup = graphene.Field(TaskGroupType)
     taskgroup_list = DjangoFilterListField(TaskGroupListType)
@@ -99,6 +149,7 @@ class Query(object):
     timeentry = DjangoObjectField(TimeEntryType)
     summary_weekly = graphene.Field(SummaryWeekType)
     summary_monthly = graphene.Field(SummaryMonthType)
+    dashboard = graphene.Field(DashBoardType)
 
     def resolve_task_user(root, info):
         user = info.context.user
@@ -173,3 +224,50 @@ class Query(object):
             )
         else:
             return None
+
+    def resolve_dashboard(root, info, **kwargs):
+        """date = datetime.date.today()
+        start_week = date - datetime.timedelta(date.weekday())
+        end_week = start_week + datetime.timedelta(6)
+        user = info.context.user
+        if not user:
+            return None
+        else:
+            project = Project.get_for(user)
+
+            # individual project
+            particular_project = TimeEntry.objects.filter(
+                user=user,
+                task__task_group__project__in=project,
+                date__lte=end_week,
+                date__gte=start_week
+            ).values('date').annotate(
+                duration=Sum(F('end_time') - F('start_time'))
+            ).values('task__task_group__project__', 'duration')
+
+            # project total
+            total_project = TimeEntry.objects.filter(
+                user=user,
+                task__task_group__project__in=project,
+                date__lte=end_week,
+                date__gte=start_week
+            ).annotate(
+                duration=F('end_time') -F('start_time')
+            ).aggregate(
+                total_duration=Sum(F('duration'))
+            )['total_duration']
+
+            return DashBoardType(
+                individual_project=particular_project,
+                project_total=total_project
+            )"""
+
+        # return all dashboard content from here
+        return DashBoardType(
+            this_week={
+                'total_hours_weekly': SummaryWeekDashBoard.total_hours,
+                'total_hours_day': SummaryWeekDashBoard.total_hours_day
+            },
+            # project
+        )
+
