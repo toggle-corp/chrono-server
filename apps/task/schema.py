@@ -1,7 +1,6 @@
 import datetime
 from dateutil.relativedelta import relativedelta
 
-
 from django.db.models import F, Sum
 from django.utils.timezone import now
 
@@ -130,7 +129,7 @@ class DashBoardType(graphene.ObjectType):
         start_week = date - datetime.timedelta(date.weekday())
         end_week = start_week + datetime.timedelta(6)
         user = info.context.user
-        queryset= TimeEntry.objects.filter(
+        queryset = TimeEntry.objects.filter(
             user=info.context.user,
             date__range=[start_week, end_week]
         ).order_by().values('date')
@@ -157,7 +156,6 @@ class DashBoardType(graphene.ObjectType):
         else:
             # get the project for the user
             projects = Project.get_for(user)
-            print('project', projects)
             queryset = TimeEntry.objects.filter(
                 user=user,
                 task__task_group__project__in=projects
@@ -214,7 +212,7 @@ class DashBoardType(graphene.ObjectType):
             projects = Project.get_for(user=user)
             queryset = TimeEntry.objects.filter(
                 task__task_group__project__in=projects
-            ).order_by().values('task__task_group__project').annotate(
+            ).order_by('task__task_group__project').values('task__task_group__project').annotate(
                 duration=Sum(F('end_time') - F('start_time'))
             ).values(
                 hours_spent=F('duration'),
@@ -224,7 +222,7 @@ class DashBoardType(graphene.ObjectType):
                 status=F('task__task_group__status')
                 )
             return queryset
-            
+
 
 class Query(object):
     taskgroup = graphene.Field(TaskGroupType)
@@ -267,8 +265,8 @@ class Query(object):
                 user=user,
                 date__range=[start_week, end_week]
             ).values('date').order_by('date').annotate(
-                duration_day=Sum(F('end_time') - F('start_time'))
-            ).values('date', 'duration_day')
+                duration=Sum(F('end_time') - F('start_time'))
+            ).values('date', 'duration')
 
             return SummaryWeekType(
                 total_hours_weekly=hours_week,
@@ -301,8 +299,8 @@ class Query(object):
                 date__gte=first_day,
                 date__lte=last_day,
             ).values('date').order_by('date').annotate(
-                duration_day=Sum(F('end_time') - F('start_time'))
-            ).values('date', 'duration_day')
+                duration=Sum(F('end_time') - F('start_time'))
+            ).values('date', 'duration')
 
             return SummaryMonthType(
                 total_hours_monthly=hours_monthly,
@@ -311,6 +309,5 @@ class Query(object):
         else:
             return None
 
-    # TODO: Remove one
     def resolve_dashboard(root, info, **kwargs):
-            return DashBoardType()
+        return DashBoardType()

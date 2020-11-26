@@ -44,6 +44,18 @@ class TaskGroupFactory(DjangoModelFactory):
     end_date = factory.Faker('date')
     created_by = factory.SubFactory(UserFactory)
     modified_by = factory.SubFactory(UserFactory)
+    users = factory.SubFactory(UserFactory)
+
+    @factory.post_generation
+    def users(self, create, extracted, **kwargs):
+        if not create:
+            # Simple build, do nothing.
+            return
+
+        if extracted:
+            # A list of groups were passed in, use them
+            for user in extracted:
+                self.users.add(user)
 
 
 class TaskFactory(DjangoModelFactory):

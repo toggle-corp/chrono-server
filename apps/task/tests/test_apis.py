@@ -9,6 +9,8 @@ from utils.factories import (
     TaskFactory,
     TimeEntryFactory,
     ProjectFactory,
+    UserGroupFactory,
+    ClientFactory,
 )
 
 
@@ -535,7 +537,7 @@ class TestSummaryAPI(ChronoGraphQLTestCase):
                     totalHoursWeekly
                     totalHoursDay {
                         date
-                        durationDay
+                        duration
                         taskList {
                             id
                             duration
@@ -551,7 +553,7 @@ class TestSummaryAPI(ChronoGraphQLTestCase):
                     totalHoursMonthly
                     totalHoursDay {
                         date
-                        durationDay
+                        duration
                         taskList {
                             id
                             duration
@@ -604,7 +606,7 @@ class TestSummaryAPI(ChronoGraphQLTestCase):
         self.assertEqual(content['data']['summaryMonthly']['totalHoursMonthly'], str(HOURS_TOTAL))
         self.assertEqual(content['data']['summaryMonthly']['totalHoursDay'][0]['date'],
         str(self.timeentry1.date))
-        self.assertEqual(content['data']['summaryMonthly']['totalHoursDay'][0]['durationDay'],
+        self.assertEqual(content['data']['summaryMonthly']['totalHoursDay'][0]['duration'],
         str(HOURS_DAY))
 
     def test_monthly_summary_with_timeentry_another_month(self):
@@ -628,3 +630,356 @@ class TestSummaryAPI(ChronoGraphQLTestCase):
         content = json.loads(response.content)
         self.assertResponseNoErrors(response)
         self.assertNotEqual(content['data']['summaryMonthly']['totalHoursMonthly'], str(HOURS_TOTAL))
+
+
+""" DashBoard Api """
+
+
+class TestDashbaoardWeekAPI(ChronoGraphQLTestCase):
+    def setUp(self):
+        self.user = UserFactory()
+        self.force_login(self.user)
+        self.task1 = TaskFactory.create(
+            user=self.user,
+        )
+        self.task2 = TaskFactory.create(
+            user=self.user
+        )
+        self.timeentry1 = TimeEntryFactory.create(
+            date=datetime.now().date() + timedelta(days=2),
+            start_time=time(10, 10, 10),
+            end_time=time(12, 10, 10),
+            user=self.user,
+            task=self.task1,
+        )
+        self.timeentry2 = TimeEntryFactory.create(
+            date=datetime.now().date() + timedelta(days=3),
+            start_time=time(10, 10, 10),
+            end_time=time(20, 10, 10),
+            user=self.user,
+            task=self.task2,
+        )
+
+        # same day for differet task
+        self.timeentry3 = TimeEntryFactory.create(
+            date=datetime.now().date() + timedelta(days=2),
+            start_time=time(15, 10, 10),
+            end_time=time(20, 10, 10),
+            user=self.user,
+            task=self.task2,
+        )
+
+        # create timeentry_with_different_user
+        self.timeentry4 = TimeEntryFactory.create(
+            date=datetime.now().date() + timedelta(days=4),
+            start_time=time(10, 20, 20),
+            end_time=time(20, 20, 20),
+            user=UserFactory.create(),
+            task=self.task1
+        )
+
+        self.q = """
+            query DashBoard{
+                dashboard {
+                    thisWeek {
+                        totalHours
+                        totalHoursDay {
+                            date
+                            duration
+                        }
+                    }
+
+                }
+
+            }
+        """
+
+    def test_dashboard_this_week(self):
+        response = self.query(
+            self.q
+        )
+
+        hours1 = datetime.combine(self.timeentry1.date, self.timeentry1.end_time)\
+                - datetime.combine(self.timeentry1.date, self.timeentry1.start_time)
+
+        hour2 = datetime.combine(self.timeentry2.date, self.timeentry2.end_time)\
+                - datetime.combine(self.timeentry2.date, self.timeentry2.start_time)
+        hour3 = datetime.combine(self.timeentry3.date, self.timeentry3.end_time)\
+                - datetime.combine(self.timeentry3.date, self.timeentry3.start_time)
+
+        HOURS_TOTAL = hours1 + hour2 + hour3
+
+        content = json.loads(response.content)
+        self.assertResponseNoErrors(response)
+        self.assertEqual(content['data']['dashboard']['thisWeek']['totalHours'], str(HOURS_TOTAL))
+
+    def test_dashboard_this_week_with_another_user(self):
+        response = self.query(
+            self.q
+        )
+
+        hours1 = datetime.combine(self.timeentry1.date, self.timeentry1.end_time)\
+                - datetime.combine(self.timeentry1.date, self.timeentry1.start_time)
+
+        hour2 = datetime.combine(self.timeentry2.date, self.timeentry2.end_time)\
+                - datetime.combine(self.timeentry2.date, self.timeentry2.start_time)
+        hour3 = datetime.combine(self.timeentry3.date, self.timeentry3.end_time)\
+                - datetime.combine(self.timeentry3.date, self.timeentry3.start_time)
+
+        hour4 = datetime.combine(self.timeentry4.date, self.timeentry4.end_time)\
+                - datetime.combine(self.timeentry4.date, self.timeentry4.start_time)
+
+        HOURS_TOTAL = hours1 + hour2 + hour3 + hour4
+
+        content = json.loads(response.content)
+        self.assertResponseNoErrors(response)
+        self.assertNotEqual(content['data']['dashboard']['thisWeek']['totalHours'], str(HOURS_TOTAL))
+
+
+class TestDashbaoardHoursByProjectAPI(ChronoGraphQLTestCase):
+    def setUp(self):
+        self.user = UserFactory.create()
+        self.force_login(self.user)
+        self.user_group = UserGroupFactory.create(
+            members=[self.user]
+        )
+        self.project1 = ProjectFactory.create(
+            title="MIS",
+            user_group=[self.user_group]
+        )
+        self.project2 = ProjectFactory.create(
+            title="SUSTAIN",
+            user_group=[self.user_group]
+        )
+        self.task_group1 = TaskGroupFactory.create(
+            project=self.project1,
+            users=[self.user]
+        )
+        self.task_group2 = TaskGroupFactory.create(
+            project=self.project2,
+            users=[self.user]
+        )
+        self.task1 = TaskFactory.create(
+            task_group=self.task_group1,
+            user=self.user
+        )
+        self.task2 = TaskFactory.create(
+            task_group=self.task_group2,
+            user=self.user
+        )
+        self.timeentry1 = TimeEntryFactory.create(
+            date=datetime.now().date() + timedelta(days=2),
+            start_time=time(10, 10, 10),
+            end_time=time(12, 10, 10),
+            user=self.user,
+            task=self.task1,
+        )
+        self.timeentry2 = TimeEntryFactory.create(
+            date=datetime.now().date() + timedelta(days=23),
+            start_time=time(10, 10, 10),
+            end_time=time(20, 10, 10),
+            user=self.user,
+            task=self.task2,
+        )
+
+        self.q = """
+            query DashBoard{
+                dashboard {
+                    hoursByProject {
+                        projectTotal
+                        projectParticular {
+                            duration
+                            projectName
+                        }
+                    }
+                }
+            }
+        """
+
+    def test_hours_by_project(self):
+        response = self.query(
+            self.q
+        )
+        hour1 = datetime.combine(self.timeentry1.date, self.timeentry1.end_time)\
+                - datetime.combine(self.timeentry1.date, self.timeentry1.start_time)
+
+        hour2 = datetime.combine(self.timeentry2.date, self.timeentry2.end_time)\
+                - datetime.combine(self.timeentry2.date, self.timeentry2.start_time)
+
+        HOURS_TOTAL = hour1 + hour2
+
+        content = json.loads(response.content)
+        self.assertResponseNoErrors(response)
+        self.assertEqual(content['data']['dashboard']['hoursByProject']['projectTotal'], str(HOURS_TOTAL))
+        self.assertEqual(content['data']['dashboard']['hoursByProject']['projectParticular'][0]['duration'],
+        str(hour1))
+        self.assertEqual(content['data']['dashboard']['hoursByProject']['projectParticular'][0]['projectName'],
+        self.project1.title)
+
+
+class TestDashbaoardMostActiveeProjectAPI(ChronoGraphQLTestCase):
+    def setUp(self):
+        self.user = UserFactory.create()
+        self.force_login(self.user)
+        self.user_group = UserGroupFactory.create(
+            members=[self.user]
+        )
+        self.project1 = ProjectFactory.create(
+            title="MIS",
+            user_group=[self.user_group]
+        )
+        self.project2 = ProjectFactory.create(
+            title="SUSTAIN",
+            user_group=[self.user_group]
+        )
+        self.task_group1 = TaskGroupFactory.create(
+            project=self.project1,
+            users=[self.user]
+        )
+        self.task_group2 = TaskGroupFactory.create(
+            project=self.project2,
+            users=[self.user]
+        )
+        self.task1 = TaskFactory.create(
+            task_group=self.task_group1,
+            user=self.user
+        )
+        self.task2 = TaskFactory.create(
+            task_group=self.task_group2,
+            user=self.user
+        )
+        self.timeentry1 = TimeEntryFactory.create(
+            date=datetime.now().date(),
+            start_time=time(10, 10, 10),
+            end_time=time(12, 10, 10),
+            user=self.user,
+            task=self.task1,
+        )
+        self.timeentry2 = TimeEntryFactory.create(
+            date=datetime.now().date() + timedelta(days=1),
+            start_time=time(10, 10, 10),
+            end_time=time(20, 10, 10),
+            user=self.user,
+            task=self.task2,
+        )
+
+        self.q = """
+            query DashBoard{
+                dashboard {
+                    mostActiveProject {
+                        projectParticular {
+                            duration
+                            projectName
+                        }
+                        projectTotal
+                    }
+                }
+            }
+        """
+
+    def test_most_active_project(self):
+        response = self.query(
+            self.q
+        )
+        hour1 = datetime.combine(self.timeentry1.date, self.timeentry1.end_time)\
+                - datetime.combine(self.timeentry1.date, self.timeentry1.start_time)
+
+        hour2 = datetime.combine(self.timeentry2.date, self.timeentry2.end_time)\
+                - datetime.combine(self.timeentry2.date, self.timeentry2.start_time)
+
+        HOURS_TOTAL = hour1 + hour2
+
+        content = json.loads(response.content)
+        self.assertResponseNoErrors(response)
+        self.assertEqual(content['data']['dashboard']['mostActiveProject']['projectTotal'], str(HOURS_TOTAL))
+        self.assertEqual(content['data']['dashboard']['mostActiveProject']['projectParticular'][0]['duration'],
+        str(hour1))
+        self.assertEqual(content['data']['dashboard']['mostActiveProject']['projectParticular'][0]['projectName'],
+        self.project1.title)
+
+
+class TestDashbaoardMyProjectAPI(ChronoGraphQLTestCase):
+    def setUp(self):
+        self.user = UserFactory.create()
+        self.force_login(self.user)
+        self.user_group = UserGroupFactory.create(
+            members=[self.user]
+        )
+        self.client1 = ClientFactory.create(
+            name="Golden Community"
+        )
+        self.client2 = ClientFactory.create(
+            name="WATER"
+        )
+        self.project1 = ProjectFactory.create(
+            title="MIS",
+            user_group=[self.user_group],
+            client=self.client1
+        )
+        self.project2 = ProjectFactory.create(
+            title="SUSTAIN",
+            user_group=[self.user_group],
+            client=self.client2
+
+        )
+        self.task_group1 = TaskGroupFactory.create(
+            project=self.project1,
+            users=[self.user],
+        )
+        self.task_group2 = TaskGroupFactory.create(
+            project=self.project2,
+            users=[self.user],
+        )
+        self.task1 = TaskFactory.create(
+            task_group=self.task_group1,
+            user=self.user
+        )
+        self.task2 = TaskFactory.create(
+            task_group=self.task_group2,
+            user=self.user
+        )
+        self.timeentry1 = TimeEntryFactory.create(
+            date=datetime.now().date() + timedelta(days=1),
+            start_time=time(10, 10, 10),
+            end_time=time(12, 10, 10),
+            user=self.user,
+            task=self.task1,
+        )
+        self.timeentry2 = TimeEntryFactory.create(
+            date=datetime.now().date() + timedelta(days=12),
+            start_time=time(10, 10, 10),
+            end_time=time(20, 10, 10),
+            user=self.user,
+            task=self.task2,
+        )
+
+        self.q = """
+            query Dashboard {
+                dashboard {
+                    myProject{
+                        clientName
+                        editedOn
+                        hoursSpent
+                        projectName
+                        status
+                    }
+                }
+            }
+        """
+
+    def test_my_project(self):
+        response = self.query(
+            self.q
+        )
+
+        hour1 = datetime.combine(self.timeentry1.date, self.timeentry1.end_time)\
+                - datetime.combine(self.timeentry1.date, self.timeentry1.start_time)
+
+        content = json.loads(response.content)
+        self.assertResponseNoErrors(response)
+        self.assertEqual(content['data']['dashboard']['myProject'][0]['projectName'],
+        self.project1.title)
+        self.assertEqual(content['data']['dashboard']['myProject'][0]['hoursSpent'],
+        str(hour1))
+        self.assertEqual(content['data']['dashboard']['myProject'][1]['clientName'],
+        self.client2.name)
