@@ -3,6 +3,7 @@
 
 # Run Migrations
 `docker-compose exec server bash`
+
 `python manage.py migrate`
 
 Navigate through `localhost:9000/graphiql` to view available graphs.
