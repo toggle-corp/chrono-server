@@ -1,3 +1,5 @@
+from datetime import datetime, time
+
 from django.core.exceptions import ValidationError
 
 from task.models import TimeEntry
@@ -36,3 +38,16 @@ class TestTimeEntryModel(ChronoGraphQLTestCase):
         )
         errors = TimeEntry.clean_dates(self.data, timeentry1)
         self.assertIn('date', errors)
+
+    def test_duration(self):
+        timeentry = TimeEntryFactory()
+        timeentry.date = datetime.now().date()
+        timeentry.start_time = time(10, 10, 10)
+        timeentry.end_time = time(20, 10, 20)
+        timeentry.user = self.user
+        timeentry.save()
+
+        difference = datetime.combine(timeentry.date, timeentry.end_time)\
+                     - datetime.combine(timeentry.date, timeentry.start_time)
+
+        self.assertEqual(timeentry.duration, difference)

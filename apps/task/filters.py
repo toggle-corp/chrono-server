@@ -5,8 +5,8 @@ from task.models import Task, TaskGroup, TimeEntry
 
 class TaskFilter(django_filters.FilterSet):
     title_contains = django_filters.CharFilter(
-                     field_name='title',
-                     lookup_expr='icontains'
+        field_name='title',
+        lookup_expr='icontains'
     )
 
     class Meta:
@@ -16,24 +16,24 @@ class TaskFilter(django_filters.FilterSet):
 
 class TaskGroupFilter(django_filters.FilterSet):
     title_contains = django_filters.CharFilter(
-                     field_name='title',
-                     lookup_expr='icontains'
+        field_name='title',
+        lookup_expr='icontains'
     )
     start_date_lte = django_filters.CharFilter(
-                     field_name='start_date',
-                     lookup_expr='lte'
+        field_name='start_date',
+        lookup_expr='lte'
     )
     start_date_gte = django_filters.CharFilter(
-                     field_name='start_date',
-                     lookup_expr='gte'
+        field_name='start_date',
+        lookup_expr='gte'
     )
     end_date_lte = django_filters.CharFilter(
-                     field_name='end_date',
-                     lookup_expr='lte'
+        field_name='end_date',
+        lookup_expr='lte'
     )
     end_date_gte = django_filters.CharFilter(
-                     field_name='end_date',
-                     lookup_expr='gte'
+        field_name='end_date',
+        lookup_expr='gte'
     )
 
     class Meta:
@@ -42,9 +42,15 @@ class TaskGroupFilter(django_filters.FilterSet):
 
 
 class TimeEntryFilter(django_filters.FilterSet):
+    date_lte = django_filters.CharFilter(
+        field_name='date',
+        lookup_expr='lte'
+    )
+    date_gte = django_filters.CharFilter(
+        field_name='date',
+        lookup_expr='gte'
+    )
+
     class Meta:
         model = TimeEntry
-        fields = {
-            "task": ("exact", ),
-            "user": ("exact", ),
-        }
+        fields = ()

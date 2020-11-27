@@ -56,6 +56,7 @@ class TaskGroupCreateInputType(graphene.InputObjectType):
     user_group = graphene.List(graphene.ID, required=False)
     created_by = graphene.ID()
     modified_by = graphene.ID()
+    project = graphene.ID(required=True)
 
 
 class TaskGroupUpdateInputType(graphene.InputObjectType):
@@ -70,6 +71,7 @@ class TaskGroupUpdateInputType(graphene.InputObjectType):
     status = graphene.Field(StatusGrapheneEnum)
     users = graphene.List(graphene.ID)
     user_group = graphene.List(graphene.ID)
+    project = graphene.ID()
 
 
 class TimeEntryCreateInputType(graphene.InputObjectType):
@@ -98,45 +100,45 @@ class TimeEntryUpdateInputType(graphene.InputObjectType):
 
 class CreateTaskGroup(graphene.Mutation):
     class Arguments:
-        task_group = TaskGroupCreateInputType(required=True)
+        data = TaskGroupCreateInputType(required=True)
 
     errors = graphene.List(CustomErrorType)
     ok = graphene.Boolean()
-    task_group = graphene.Field(TaskGroupType)
+    result = graphene.Field(TaskGroupType)
 
     @staticmethod
-    def mutate(root, info, task_group):
-        serializer = TaskGroupSerializer(data=task_group)
+    def mutate(root, info, data):
+        serializer = TaskGroupSerializer(data=data)
         if errors := mutation_is_not_valid(serializer):
             return CreateTaskGroup(errors=errors, ok=False)
         instance = serializer.save()
-        return CreateTaskGroup(task_group=instance, errors=None, ok=True)
+        return CreateTaskGroup(result=instance, errors=None, ok=True)
 
 
 class UpdateTaskGroup(graphene.Mutation):
     class Arguments:
-        task_group = TaskGroupUpdateInputType(required=True)
+        data = TaskGroupUpdateInputType(required=True)
 
     errors = graphene.List(CustomErrorType)
     ok = graphene.Boolean()
-    task_group = graphene.Field(TaskGroupType)
+    result = graphene.Field(TaskGroupType)
 
     @staticmethod
-    def mutate(root, info, task_group):
+    def mutate(root, info, data):
         try:
-            instance = TaskGroup.objects.get(id=task_group['id'])
+            instance = TaskGroup.objects.get(id=data['id'])
         except TaskGroup.DoesNotExist:
             return UpdateTaskGroup(errors=[
-                CustomErrorType(field='non_field_errors',
+                CustomErrorType(field='nonFieldErrors',
                                 messages=[gettext('TaskGroup does not exist.')])
             ])
         serializer = TaskGroupSerializer(instance=instance,
-                                         data=task_group,
+                                         data=data,
                                          partial=True)
         if errors:= mutation_is_not_valid(serializer):
             return UpdateTaskGroup(errors=errors, ok=False)
         instance = serializer.save()
-        return UpdateTaskGroup(task_group=instance, errors=None, ok=True)
+        return UpdateTaskGroup(result=instance, errors=None, ok=True)
 
 
 class DeleteTaskGroup(graphene.Mutation):
@@ -145,7 +147,7 @@ class DeleteTaskGroup(graphene.Mutation):
 
     errors = graphene.List(CustomErrorType)
     ok = graphene.Boolean()
-    task_group = graphene.Field(TaskGroupType)
+    result = graphene.Field(TaskGroupType)
 
     @staticmethod
     def mutate(root, info, id):
@@ -153,54 +155,55 @@ class DeleteTaskGroup(graphene.Mutation):
             instance = TaskGroup.objects.get(id=id)
         except TaskGroup.DoesNotExist:
             return DeleteTaskGroup(errors=[
-                CustomErrorType(field='non_field_errors', messages=gettext('TaskGroup does not exist'))
+                CustomErrorType(field='nonFieldErrors',
+                                messages=gettext('TaskGroup does not exist'))
             ])
         instance.delete()
         instance.id = id
-        return DeleteTaskGroup(task_group=instance, errors=None, ok=True)
+        return DeleteTaskGroup(result=instance, errors=None, ok=True)
 
 
 class CreateTask(graphene.Mutation):
     class Arguments:
-        task = TaskCreateInputType(required=True)
+        data = TaskCreateInputType(required=True)
 
     errors = graphene.List(CustomErrorType)
     ok = graphene.Boolean()
-    task = graphene.Field(TaskType)
+    result = graphene.Field(TaskType)
 
     @staticmethod
-    def mutate(root, info, task):
-        serializer = TaskSerializer(data=task)
+    def mutate(root, info, data):
+        serializer = TaskSerializer(data=data)
         if errors := mutation_is_not_valid(serializer):
             return CreateTask(errors=errors, ok=False)
         instance = serializer.save()
-        return CreateTask(task=instance, errors=None, ok=True)
+        return CreateTask(result=instance, errors=None, ok=True)
 
 
 class UpdateTask(graphene.Mutation):
     class Arguments:
-        task = TaskUpdateInputType(required=True)
+        data = TaskUpdateInputType(required=True)
 
     errors = graphene.List(CustomErrorType)
     ok = graphene.Boolean()
-    task = graphene.Field(TaskType)
+    result = graphene.Field(TaskType)
 
     @staticmethod
-    def mutate(root, info, task):
+    def mutate(root, info, data):
         try:
-            instance = Task.objects.get(id=task['id'])
+            instance = Task.objects.get(id=data['id'])
         except Task.DoesNotExist:
             return UpdateTask(errors=[
-                CustomErrorType(field='non_field_errors',
+                CustomErrorType(field='nonFieldErrors',
                                 messages=[gettext('Task does not exist.')])
             ])
         serializer = TaskSerializer(instance=instance,
-                                    data=task,
+                                    data=data,
                                     partial=True)
         if errors:= mutation_is_not_valid(serializer):
             return UpdateTask(errors=errors, ok=False)
         instance = serializer.save()
-        return UpdateTask(task=instance, errors=None, ok=True)
+        return UpdateTask(result=instance, errors=None, ok=True)
 
 
 class DeleteTask(graphene.Mutation):
@@ -209,7 +212,7 @@ class DeleteTask(graphene.Mutation):
 
     errors = graphene.List(CustomErrorType)
     ok = graphene.Boolean()
-    task = graphene.Field(TaskType)
+    result = graphene.Field(TaskType)
 
     @staticmethod
     def mutate(root, info, id):
@@ -217,54 +220,55 @@ class DeleteTask(graphene.Mutation):
             instance = Task.objects.get(id=id)
         except Task.DoesNotExist:
             return DeleteTask(errors=[
-                CustomErrorType(field='non_field_errors', messages=gettext('Task does not exist'))
+                CustomErrorType(field='nonFieldErrors',
+                                messages=gettext('Task does not exist'))
             ])
         instance.delete()
         instance.id = id
-        return DeleteTask(task=instance, errors=None, ok=True)
+        return DeleteTask(result=instance, errors=None, ok=True)
 
 
 class CreateTimeEntry(graphene.Mutation):
     class Arguments:
-        time_entry = TimeEntryCreateInputType(required=True)
+        data = TimeEntryCreateInputType(required=True)
 
     errors = graphene.List(CustomErrorType)
     ok = graphene.Boolean()
-    time_entry = graphene.Field(TimeEntryType)
+    result = graphene.Field(TimeEntryType)
 
     @staticmethod
-    def mutate(root, info, time_entry):
-        serializer = TimeEntrySerializer(data=time_entry)
+    def mutate(root, info, data):
+        serializer = TimeEntrySerializer(data=data)
         if errors := mutation_is_not_valid(serializer):
             return CreateTimeEntry(errors=errors, ok=False)
         instance = serializer.save()
-        return CreateTimeEntry(time_entry=instance, errors=None, ok=True)
+        return CreateTimeEntry(result=instance, errors=None, ok=True)
 
 
 class UpdateTimeEntry(graphene.Mutation):
     class Arguments:
-        time_entry = TimeEntryUpdateInputType(required=True)
+        data = TimeEntryUpdateInputType(required=True)
 
     errors = graphene.List(CustomErrorType)
     ok = graphene.Boolean()
-    time_entry = graphene.Field(TimeEntryType)
+    result = graphene.Field(TimeEntryType)
 
     @staticmethod
-    def mutate(root, info, time_entry):
+    def mutate(root, info, data):
         try:
-            instance = TimeEntry.objects.get(id=time_entry['id'])
+            instance = TimeEntry.objects.get(id=data['id'])
         except TimeEntry.DoesNotExist:
             return UpdateTimeEntry(errors=[
-                CustomErrorType(field='non_field_errors',
+                CustomErrorType(field='nonFieldErrors',
                                 messages=[gettext('UserGroup does not exist.')])
             ])
         serializer = TimeEntrySerializer(instance=instance,
-                                         data=time_entry,
+                                         data=data,
                                          partial=True)
         if errors:= mutation_is_not_valid(serializer):
             return UpdateTimeEntry(errors=errors, ok=False)
         instance = serializer.save()
-        return UpdateTimeEntry(time_entry=instance, errors=None, ok=True)
+        return UpdateTimeEntry(result=instance, errors=None, ok=True)
 
 
 class DeleteTimeEntry(graphene.Mutation):
@@ -273,7 +277,7 @@ class DeleteTimeEntry(graphene.Mutation):
 
     errors = graphene.List(CustomErrorType)
     ok = graphene.Boolean()
-    time_entry = graphene.Field(TimeEntryType)
+    result = graphene.Field(TimeEntryType)
 
     @staticmethod
     def mutate(root, info, id):
@@ -281,11 +285,12 @@ class DeleteTimeEntry(graphene.Mutation):
             instance = TimeEntry.objects.get(id=id)
         except TimeEntry.DoesNotExist:
             return DeleteTimeEntry(errors=[
-                CustomErrorType(field='non_field_errors', messages=gettext('Task does not exist'))
+                CustomErrorType(field='nonFieldErrors',
+                                messages=gettext('Task does not exist'))
             ])
         instance.delete()
         instance.id = id
-        return DeleteTimeEntry(time_entry=instance, errors=None, ok=True)
+        return DeleteTimeEntry(result=instance, errors=None, ok=True)
 
 
 class Mutation(object):
