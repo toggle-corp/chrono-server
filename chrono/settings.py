@@ -100,18 +100,30 @@ WSGI_APPLICATION = 'chrono.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DATABASE_NAME', 'postgres'),
-        'USER': os.environ.get('DATABASE_USER', 'postgres'),
-        'PASSWORD': os.environ.get('DATABASE_PASSWORD', 'postgres'),
-        'PORT': os.environ.get('DATABASE_PORT', '5432'),
-        'HOST': os.environ.get('DATABASE_HOST', 'db'),
-    }
-}
 
-   
+if os.environ.get('GITHUB_WORKFLOW'):
+    print('Database github workflow')
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': 'postgres',
+            'USER': 'postgres',
+            'PASSWORD': 'postgres',
+            'HOST': 'localhost',
+            'PORT': 5432,
+        }
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': os.environ.get('POSTGRES_DB', 'postgres'),
+            'USER': os.environ.get('POSTGRES_USER', 'postgres'),
+            'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'postgres'),
+            'HOST': os.environ.get('POSTGRES_HOST', 'db'),
+            'PORT': os.environ.get('POSTGRES_PORT', 5432),
+        }
+    }
 
 
 # Password validation
@@ -152,7 +164,6 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-
 AUTH_USER_MODEL = 'user.User'
 
 # https://docs.graphene-python.org/projects/django/en/latest/settings/
@@ -181,3 +192,7 @@ if DEBUG:
 AUTHENTICATION_BACKEND = [
     'django.contrib.auth.backends.ModelBackend',
 ]
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = 'media/'

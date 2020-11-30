@@ -71,45 +71,45 @@ class UserUpdateInputType(graphene.InputObjectType):
 
 class CreateUser(graphene.Mutation):
     class Arguments:
-        user = UserCreateInputType(required=True)
+        data = UserCreateInputType(required=True)
 
     errors = graphene.List(CustomErrorType)
     ok = graphene.Boolean()
-    user = graphene.Field(UserType)
+    result = graphene.Field(UserType)
 
     @staticmethod
-    def mutate(root, info, user):
-        serializer = ProfileSerializer(data=user)
+    def mutate(root, info, data):
+        serializer = ProfileSerializer(data=data)
         if errors := mutation_is_not_valid(serializer):
             return CreateUser(errors=errors, ok=False)
         instance = serializer.save()
-        return CreateUser(user=instance, errors=None, ok=True)
+        return CreateUser(result=instance, errors=None, ok=True)
 
 
 class UpdateUser(graphene.Mutation):
     class Arguments:
-        user = UserUpdateInputType(required=True)
+        data = UserUpdateInputType(required=True)
 
     errors = graphene.List(CustomErrorType)
     ok = graphene.Boolean()
-    user = graphene.Field(UserType)
+    result = graphene.Field(UserType)
 
     @staticmethod
-    def mutate(root, info, user):
+    def mutate(root, info, data):
         try:
-            instance = User.objects.get(id=user['id'])
+            instance = User.objects.get(id=data['id'])
         except User.DoesNotExist:
             return UpdateUser(errors=[
-                CustomErrorType(field='non_field_errors',
+                CustomErrorType(field='nonFieldErrors',
                 messages=[gettext('User does not exist.')])
             ])
         serializer = ProfileSerializer(instance=instance,
-                                       data=user,
+                                       data=data,
                                        partial=True)
         if errors:= mutation_is_not_valid(serializer):
             return UpdateUser(errors=errors, ok=False)
         instance = serializer.save()
-        return UpdateUser(user=instance, errors=None, ok=True)
+        return UpdateUser(result=instance, errors=None, ok=True)
 
 
 class Mutation(object):

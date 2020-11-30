@@ -163,12 +163,12 @@ class TestUserCreate(ChronoGraphQLTestCase):
     def setUp(self):
         self.mutation = '''
             mutation CreateUser($input: UserCreateInputType!){
-                createUser(user: $input){
+                createUser(data: $input){
                     errors{
                         field
                         messages
                     }
-                    user {
+                    result {
                         id
                         username
                         phoneNumber
@@ -197,9 +197,9 @@ class TestUserCreate(ChronoGraphQLTestCase):
         self.assertResponseNoErrors(response)
         self.assertTrue(content['data']['createUser']['ok'], content)
         self.assertIsNone(content['data']['createUser']['errors'], content)
-        self.assertEqual(content['data']['createUser']['user']['username'],
+        self.assertEqual(content['data']['createUser']['result']['username'],
                          self.input['username'])
-        self.assertEqual(content['data']['createUser']['user']['phoneNumber'],
+        self.assertEqual(content['data']['createUser']['result']['phoneNumber'],
                          self.input['phoneNumber'])
 
 
@@ -208,12 +208,12 @@ class TestUpdateProfile(ChronoGraphQLTestCase):
         self.user = self.create_user()
         self.mutation_update = '''
             mutation UpdateUser($input: UserUpdateInputType!){
-                updateUser(user: $input){
+                updateUser(data: $input){
                     errors{
                         field
                         messages
                     }
-                    user{
+                    result {
                         id
                         phoneNumber
                         address
@@ -236,9 +236,8 @@ class TestUpdateProfile(ChronoGraphQLTestCase):
             input_data=self.input,
         )
         content = json.loads(response.content)
-        print("data", content)
-        self.assertResponseNoErrors(content)
+        self.assertResponseNoErrors(response)
         self.assertTrue(content['data']['updateUser']['ok'], content)
         self.assertIsNone(content['data']['updateUser']['errors'], content)
-        self.assertEqual(content['data']['updateUser']['user']['position'],
+        self.assertEqual(content['data']['updateUser']['result']['position'],
                          self.input['position'])

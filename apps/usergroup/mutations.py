@@ -36,62 +36,62 @@ class GroupMemberCreateInputType(graphene.InputObjectType):
 
 class CreateUserGroup(graphene.Mutation):
     class Arguments:
-        group = UserGroupCreateInputType(required=True)
+        data = UserGroupCreateInputType(required=True)
 
     errors = graphene.List(CustomErrorType)
     ok = graphene.Boolean()
-    group = graphene.Field(UserGroupType)
+    result = graphene.Field(UserGroupType)
 
     @staticmethod
-    def mutate(root, info, group):
-        serializer = UserGroupSerializer(data=group)
+    def mutate(root, info, data):
+        serializer = UserGroupSerializer(data=data)
         if errors := mutation_is_not_valid(serializer):
             return CreateUserGroup(errors=errors, ok=False)
         instance = serializer.save()
-        return CreateUserGroup(group=instance, errors=None, ok=True)
+        return CreateUserGroup(result=instance, errors=None, ok=True)
 
 
 class UpdateUserGroup(graphene.Mutation):
     class Arguments:
-        group = UserGroupUpdateInputType(required=True)
+        data = UserGroupUpdateInputType(required=True)
 
     errors = graphene.List(CustomErrorType)
     ok = graphene.Boolean()
-    group = graphene.Field(UserGroupType)
+    result = graphene.Field(UserGroupType)
 
     @staticmethod
-    def mutate(root, info, group):
+    def mutate(root, info, data):
         try:
-            instance = UserGroup.objects.get(id=group['id'])
+            instance = UserGroup.objects.get(id=data['id'])
         except UserGroup.DoesNotExist:
             return UpdateUserGroup(errors=[
-                CustomErrorType(field='non_field_errors',
+                CustomErrorType(field='nonFieldErrors',
                 messages=[gettext('UserGroup does not exist.')])
             ])
         serializer = UserGroupSerializer(instance=instance,
-                                         data=group,
+                                         data=data,
                                          partial=True)
         if errors:= mutation_is_not_valid(serializer):
             return UpdateUserGroup(errors=errors, ok=False)
         instance = serializer.save()
-        return UpdateUserGroup(group=instance, errors=None, ok=True)
+        return UpdateUserGroup(result=instance, errors=None, ok=True)
 
 
 class CreateGroupMember(graphene.Mutation):
     class Arguments:
-        groupmember = GroupMemberCreateInputType(required=True)
+        data = GroupMemberCreateInputType(required=True)
 
     errors = graphene.List(CustomErrorType)
     ok = graphene.Boolean()
-    groupmember = graphene.Field(GroupMemberType)
+    result = graphene.Field(GroupMemberType)
 
     @staticmethod
-    def mutate(root, info, groupmember):
-        serializer = GroupMemberSerializer(data=groupmember)
+    def mutate(root, info, data):
+        serializer = GroupMemberSerializer(data=data)
         if errors := mutation_is_not_valid(serializer):
             return CreateGroupMember(errors=errors, ok=False)
         instance = serializer.save()
-        return CreateGroupMember(groupmember=instance, errors=None, ok=True)
+        return CreateGroupMember(result=instance, errors=None, ok=True)
 
 
 class DeleteGroupMember(graphene.Mutation):
@@ -99,24 +99,24 @@ class DeleteGroupMember(graphene.Mutation):
     Delete memebers from the group members
     """
     class Arguments:
-        group = graphene.ID()
-        member = graphene.ID()
+        id = graphene.ID(required=True)
 
     errors = graphene.List(CustomErrorType)
     ok = graphene.Boolean()
-    groupmember = graphene.Field(GroupMemberType)
+    result = graphene.Field(GroupMemberType)
 
     @staticmethod
-    def mutate(root, info, member, group):
+    def mutate(root, info, id):
         try:
-            instance = GroupMember.objects.get(member=member, group=group)
+            instance = GroupMember.objects.get(id=id)
         except GroupMember.DoesNotExist:
             return DeleteGroupMember(errors=[
-                CustomErrorType(field='non_field_errors', messages=gettext('Member does not exist.'))
+                CustomErrorType(field='nonFieldErrors',
+                                messages=gettext('Member does not exist.'))
             ])
         instance.delete()
         instance.id = id
-        return DeleteGroupMember(groupmember=instance, errors=None, ok=True)
+        return DeleteGroupMember(result=instance, errors=None, ok=True)
 
 
 class Mutation(object):

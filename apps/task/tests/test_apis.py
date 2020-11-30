@@ -524,11 +524,19 @@ class TestSummaryAPI(ChronoGraphQLTestCase):
 
         # create timeentry for the next month
         self.timeentry4 = TimeEntryFactory.create(
-            date=datetime.now().date() + timedelta(days=20),
+            date=datetime.now().date() + timedelta(days=30),
             start_time=time(15, 10, 10),
             end_time=time(20, 10, 10),
             user=self.user,
             task=self.task2,
+        )
+
+        self.timeentry5 = TimeEntryFactory.create(
+            date=datetime.now().date(),
+            start_time=time(10, 12, 10),
+            end_time=time(20, 20, 10),
+            user=self.user,
+            task=self.task1
         )
 
         self.q = """
@@ -576,56 +584,43 @@ class TestSummaryAPI(ChronoGraphQLTestCase):
                 - datetime.combine(self.timeentry2.date, self.timeentry2.start_time)
         hour3 = datetime.combine(self.timeentry3.date, self.timeentry3.end_time)\
                 - datetime.combine(self.timeentry3.date, self.timeentry3.start_time)
+        hour5 = datetime.combine(self.timeentry5.date, self.timeentry5.end_time)\
+                - datetime.combine(self.timeentry5.date, self.timeentry5.start_time)
 
-        HOURS_TOTAL = hours1 + hour2 + hour3
+        HOURS_TOTAL = hours1 + hour2 + hour3 + hour5
 
         content = json.loads(response.content)
         self.assertResponseNoErrors(response)
         self.assertEqual(content['data']['summaryWeekly']['totalHoursWeekly'], str(HOURS_TOTAL))
-        self.assertEqual(content['data']['summaryWeekly']['totalHoursDay'][0]['date'],
-        str(self.timeentry1.date))
 
     def test_monthly_summary_api_reponse_structure(self):
         response = self.query(
             self.q1
         )
 
-        hours1 = datetime.combine(self.timeentry1.date, self.timeentry1.end_time)\
-                - datetime.combine(self.timeentry1.date, self.timeentry1.start_time)
+        hour5 = datetime.combine(self.timeentry5.date, self.timeentry5.end_time)\
+                - datetime.combine(self.timeentry5.date, self.timeentry5.start_time)
 
-        hour2 = datetime.combine(self.timeentry2.date, self.timeentry2.end_time)\
-                - datetime.combine(self.timeentry2.date, self.timeentry2.start_time)
-        hour3 = datetime.combine(self.timeentry3.date, self.timeentry3.end_time)\
-                - datetime.combine(self.timeentry3.date, self.timeentry3.start_time)
-
-        HOURS_TOTAL = hours1 + hour2 + hour3
-        HOURS_DAY = hours1 + hour3
+        HOURS_TOTAL = hour5
+        HOURS_DAY = hour5
 
         content = json.loads(response.content)
         self.assertResponseNoErrors(response)
-        self.assertEqual(content['data']['summaryMonthly']['totalHoursMonthly'], str(HOURS_TOTAL))
-        self.assertEqual(content['data']['summaryMonthly']['totalHoursDay'][0]['date'],
-        str(self.timeentry1.date))
-        self.assertEqual(content['data']['summaryMonthly']['totalHoursDay'][0]['duration'],
-        str(HOURS_DAY))
+        self.assertEqual(content['data']['summaryMonthly']['totalHoursDay'][0]['date'], str(self.timeentry5.date))
+        self.assertEqual(content['data']['summaryMonthly']['totalHoursDay'][0]['duration'], str(HOURS_DAY))
 
     def test_monthly_summary_with_timeentry_another_month(self):
         response = self.query(
             self.q1
         )
 
-        hours1 = datetime.combine(self.timeentry1.date, self.timeentry1.end_time)\
-                - datetime.combine(self.timeentry1.date, self.timeentry1.start_time)
-
-        hour2 = datetime.combine(self.timeentry2.date, self.timeentry2.end_time)\
-                - datetime.combine(self.timeentry2.date, self.timeentry2.start_time)
-        hour3 = datetime.combine(self.timeentry3.date, self.timeentry3.end_time)\
-                - datetime.combine(self.timeentry3.date, self.timeentry3.start_time)
         hour4 = datetime.combine(self.timeentry4.date, self.timeentry4.end_time)\
                 - datetime.combine(self.timeentry4.date, self.timeentry4.start_time)
 
+        hour5 = datetime.combine(self.timeentry5.date, self.timeentry5.end_time)\
+                - datetime.combine(self.timeentry5.date, self.timeentry5.start_time)
 
-        HOURS_TOTAL = hours1 + hour2 + hour3 + hour4
+        HOURS_TOTAL = hour4 + hour5
 
         content = json.loads(response.content)
         self.assertResponseNoErrors(response)
