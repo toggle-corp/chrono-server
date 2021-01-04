@@ -22,12 +22,19 @@ from project.models import Project
 
 
 class TaskGroupType(DjangoObjectType):
+    status = graphene.Field(StatusGrapheneEnum)
+    duration = graphene.String()
+
     class Meta:
         model = TaskGroup
         fields = '__all__'
 
-    status = graphene.Field(StatusGrapheneEnum)
-
+    def resolve_duration(self, info, **kwargs):
+        user = info.context.user
+        if not user:
+            return None
+        else:
+            return self.duration_taskgroup(user)
 
 class TaskGroupListType(DjangoObjectType):
     class Meta:
@@ -36,17 +43,28 @@ class TaskGroupListType(DjangoObjectType):
 
 
 class TaskType(DjangoObjectType):
-
     class Meta:
         model = Task
         fields = '__all__'
 
+    @staticmethod
+    def get_queryset(queryset, info):
+        return queryset
+
 
 class TaskListType(DjangoObjectType):
+    duration = graphene.String()
+
     class Meta:
         model = Task
         filterset_class = TaskFilter
 
+    def resolve_duration(self, info, **kwargs):
+        user = info.context.user
+        if not user:
+            return None
+        else:
+            return self.duration_task(user)
 
 class TimeEntryType(DjangoObjectType):
     duration = graphene.String()
@@ -225,7 +243,7 @@ class DashBoardType(graphene.ObjectType):
 
 
 class Query(object):
-    taskgroup = graphene.Field(TaskGroupType)
+    taskgroup = DjangoObjectField(TaskGroupType)
     taskgroup_list = DjangoFilterListField(TaskGroupListType)
     task = DjangoObjectField(TaskType)
     task_user = graphene.List(TaskType)
@@ -234,6 +252,15 @@ class Query(object):
     summary_weekly = graphene.Field(SummaryWeekType)
     summary_monthly = graphene.Field(SummaryMonthType)
     dashboard = graphene.Field(DashBoardType)
+
+    def resolve_taskgroup(root, info, **kwargs):
+        user = info.context.user
+        if not user:
+            return None
+        else:
+            return TaskGroup.objects.filter(
+                users=user
+            )
 
     def resolve_task_user(root, info):
         user = info.context.user

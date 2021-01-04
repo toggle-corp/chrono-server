@@ -8,7 +8,7 @@ from task.schema import (
     TaskGroupType,
     TaskGroupListType,
     TaskType,
-    TaskListType,
+    #TaskListType,
     TimeEntryType,
 )
 from task.serializers import (

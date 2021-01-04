@@ -45,8 +45,21 @@ class TaskGroup(BaseModel):
     @staticmethod
     def get_for(user):
         return TaskGroup.objects.filter(
-            user_group__members=user
+            users__in=[user]
         ).distinct()
+
+    def duration_taskgroup(self, user):
+        task_group = TaskGroup.objects.filter(id=self.id).annotate(
+            duration=models.Subquery(
+                Task.objects.order_by().filter(
+                    task_group=models.OuterRef('pk'),
+                    user=user
+                ).values('task_group').annotate(
+                    task_duration=models.Sum(F('timeentry__end_time') - F('timeentry__start_time'))
+                ).values('task_duration')
+            )
+        ).aggregate(sum=models.Sum('duration'))['sum']
+        return task_group
 
 
 class Task(BaseModel):
@@ -61,6 +74,26 @@ class Task(BaseModel):
 
     def __str__(self):
         return self.title
+
+    @staticmethod
+    def get_for(user):
+        task_group = TaskGroup.get_for(user)
+        return Task.objects.filter(
+            user=user,
+            task_group__in=task_group
+        ).distinct()
+
+    def duration_task(self, user):
+        task = Task.objects.get(id=self.id)
+        duration = TimeEntry.objects.filter(
+            user=user,
+            task=task
+        ).order_by().values('task').annotate(
+            duration=F('end_time') - F('start_time')
+        ).aggregate(
+            sum=Sum('duration')
+        )['sum']
+        return duration
 
 
 class TimeEntry(models.Model):
