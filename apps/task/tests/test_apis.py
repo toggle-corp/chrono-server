@@ -12,6 +12,7 @@ from utils.factories import (
     UserGroupFactory,
     ClientFactory,
 )
+from utils.common import calculate_duration
 
 
 """
@@ -61,7 +62,6 @@ class TestCreateTask(ChronoGraphQLTestCase):
             self.mutation,
             input_data=self.input,
         )
-
         content = json.loads(response.content)
         self.assertResponseNoErrors(response)
         self.assertTrue(content['data']['createTask']['ok'], content)
@@ -69,7 +69,7 @@ class TestCreateTask(ChronoGraphQLTestCase):
         self.assertEqual(content['data']['createTask']['result']['title'],
                          self.input['title'])
         self.assertEqual(content['data']['createTask']['result']['createdBy']['id'], 
-                          str(self.input['createdBy']))
+                         str(self.input['createdBy']))
 
 
 class TestUpdateTask(ChronoGraphQLTestCase):
@@ -175,7 +175,9 @@ class TestTaskListQuery(ChronoGraphQLTestCase):
         self.qy = '''
             query taskList($title:String, $user: ID, $taskGroup: ID){
                 taskList(titleContains: $title, user: $user, taskGroup: $taskGroup){
-                    id
+                    results {
+                        id
+                    }
                 }
             }
         '''
@@ -191,7 +193,7 @@ class TestTaskListQuery(ChronoGraphQLTestCase):
         content = json.loads(response.content)
         output = self.task1.id
         self.assertResponseNoErrors(response)
-        self.assertEqual(int(content['data']['taskList'][0]['id']), output)
+        self.assertEqual(int(content['data']['taskList']['results'][0]['id']), output)
 
         variables = {
             "taskGroup": self.task1.task_group.id,
@@ -203,7 +205,7 @@ class TestTaskListQuery(ChronoGraphQLTestCase):
         content = json.loads(response.content)
         output = self.task1.id
         self.assertResponseNoErrors(response)
-        self.assertEqual(int(content['data']['taskList'][0]['id']), output)
+        self.assertEqual(int(content['data']['taskList']['results'][0]['id']), output)
 
 
 """
@@ -213,7 +215,7 @@ Test case for TaskGroup mutations and query
 
 class TestTakGroupCreate(ChronoGraphQLTestCase):
     def setUp(self):
-        users = UserFactory.create_batch(2)
+        users = UserFactory.create_batch(5)
         self.user1 = UserFactory.create().id
         self.mutation = '''mutation CreateTaskGroup($input: TaskGroupCreateInputType!){
             createTaskgroup(data: $input){
@@ -225,18 +227,6 @@ class TestTakGroupCreate(ChronoGraphQLTestCase):
                     id
                     title
                     description
-                    users{
-                        email
-                    }
-                    userGroup{
-                        id
-                    }
-                    createdBy{
-                        id
-                    }
-                    modifiedBy{
-                        id
-                    }
                 }
                 ok
             }
@@ -259,15 +249,13 @@ class TestTakGroupCreate(ChronoGraphQLTestCase):
             self.mutation,
             input_data=self.input,
         )
-
+        print(response.content)
         content = json.loads(response.content)
         self.assertResponseNoErrors(response)
         self.assertTrue(content['data']['createTaskgroup']['ok'], content)
         self.assertIsNone(content['data']['createTaskgroup']['errors'], content)
         self.assertEqual(content['data']['createTaskgroup']['result']['title'],
                          self.input['title'])
-        self.assertEqual(content['data']['createTaskgroup']['result']['createdBy']['id'],
-                          str(self.input['createdBy']))
 
 
 class TaskGroupUpdate(ChronoGraphQLTestCase):
@@ -282,10 +270,6 @@ class TaskGroupUpdate(ChronoGraphQLTestCase):
                     id
                     title
                     description
-                    users{
-                        id
-                        email
-                    }
                 }
                 ok
             }
@@ -310,8 +294,6 @@ class TaskGroupUpdate(ChronoGraphQLTestCase):
         self.assertIsNone(content['data']['updateTaskgroup']['errors'], content)
         self.assertEqual(content['data']['updateTaskgroup']['result']['id'],
                          str(self.input['id']))
-        self.assertEqual(content['data']['updateTaskgroup']['result']['users'][0]['id'],
-                         str(self.input['users']))
 
 
 class TestDeleteTaskGroup(ChronoGraphQLTestCase):
@@ -326,10 +308,6 @@ class TestDeleteTaskGroup(ChronoGraphQLTestCase):
                     id
                     title
                     description
-                    users{
-                        id
-                        email
-                    }
                 }
                 ok
             }
@@ -389,7 +367,7 @@ class TimeEntryCreate(ChronoGraphQLTestCase):
             "startTime": "10:10:10"
         }
 
-    def test_valid_taskentry_creation(self):
+    def test_valid_timeentry_creation(self):
         response = self.query(
             self.mutation,
             input_data=self.input,
@@ -524,7 +502,7 @@ class TestSummaryAPI(ChronoGraphQLTestCase):
 
         # create timeentry for the next month
         self.timeentry4 = TimeEntryFactory.create(
-            date=datetime.now().date() + timedelta(days=20),
+            date=datetime.now().date() + timedelta(days=50),
             start_time=time(15, 10, 10),
             end_time=time(20, 10, 10),
             user=self.user,
@@ -569,13 +547,9 @@ class TestSummaryAPI(ChronoGraphQLTestCase):
             self.q
         )
 
-        hours1 = datetime.combine(self.timeentry1.date, self.timeentry1.end_time)\
-                - datetime.combine(self.timeentry1.date, self.timeentry1.start_time)
-
-        hour2 = datetime.combine(self.timeentry2.date, self.timeentry2.end_time)\
-                - datetime.combine(self.timeentry2.date, self.timeentry2.start_time)
-        hour3 = datetime.combine(self.timeentry3.date, self.timeentry3.end_time)\
-                - datetime.combine(self.timeentry3.date, self.timeentry3.start_time)
+        hours1 = calculate_duration(self.timeentry1.date, self.timeentry1.start_time, self.timeentry1.end_time)
+        hour2 = calculate_duration(self.timeentry2.date, self.timeentry2.start_time, self.timeentry2.end_time)
+        hour3 = calculate_duration(self.timeentry3.date, self.timeentry3.start_time, self.timeentry3.end_time)
 
         HOURS_TOTAL = hours1 + hour2 + hour3
 
@@ -583,53 +557,45 @@ class TestSummaryAPI(ChronoGraphQLTestCase):
         self.assertResponseNoErrors(response)
         self.assertEqual(content['data']['summaryWeekly']['totalHoursWeekly'], str(HOURS_TOTAL))
         self.assertEqual(content['data']['summaryWeekly']['totalHoursDay'][0]['date'],
-        str(self.timeentry1.date))
+                         str(self.timeentry1.date))
 
     def test_monthly_summary_api_reponse_structure(self):
         response = self.query(
             self.q1
         )
 
-        hours1 = datetime.combine(self.timeentry1.date, self.timeentry1.end_time)\
-                - datetime.combine(self.timeentry1.date, self.timeentry1.start_time)
-
-        hour2 = datetime.combine(self.timeentry2.date, self.timeentry2.end_time)\
-                - datetime.combine(self.timeentry2.date, self.timeentry2.start_time)
-        hour3 = datetime.combine(self.timeentry3.date, self.timeentry3.end_time)\
-                - datetime.combine(self.timeentry3.date, self.timeentry3.start_time)
+        hours1 = calculate_duration(self.timeentry1.date, self.timeentry1.start_time, self.timeentry1.end_time)
+        hour2 = calculate_duration(self.timeentry2.date, self.timeentry2.start_time, self.timeentry2.end_time)
+        hour3 = calculate_duration(self.timeentry3.date, self.timeentry3.start_time, self.timeentry3.end_time)
 
         HOURS_TOTAL = hours1 + hour2 + hour3
         HOURS_DAY = hours1 + hour3
 
         content = json.loads(response.content)
         self.assertResponseNoErrors(response)
-        self.assertEqual(content['data']['summaryMonthly']['totalHoursMonthly'], str(HOURS_TOTAL))
+        self.assertEqual(content['data']['summaryMonthly']['totalHoursMonthly'],
+                         str(HOURS_TOTAL))
         self.assertEqual(content['data']['summaryMonthly']['totalHoursDay'][0]['date'],
-        str(self.timeentry1.date))
+                         str(self.timeentry1.date))
         self.assertEqual(content['data']['summaryMonthly']['totalHoursDay'][0]['duration'],
-        str(HOURS_DAY))
+                         str(HOURS_DAY))
 
     def test_monthly_summary_with_timeentry_another_month(self):
         response = self.query(
             self.q1
         )
 
-        hours1 = datetime.combine(self.timeentry1.date, self.timeentry1.end_time)\
-                - datetime.combine(self.timeentry1.date, self.timeentry1.start_time)
-
-        hour2 = datetime.combine(self.timeentry2.date, self.timeentry2.end_time)\
-                - datetime.combine(self.timeentry2.date, self.timeentry2.start_time)
-        hour3 = datetime.combine(self.timeentry3.date, self.timeentry3.end_time)\
-                - datetime.combine(self.timeentry3.date, self.timeentry3.start_time)
-        hour4 = datetime.combine(self.timeentry4.date, self.timeentry4.end_time)\
-                - datetime.combine(self.timeentry4.date, self.timeentry4.start_time)
-
+        hours1 = calculate_duration(self.timeentry1.date, self.timeentry1.start_time, self.timeentry1.end_time)
+        hour2 = calculate_duration(self.timeentry2.date, self.timeentry2.start_time, self.timeentry2.end_time)
+        hour3 = calculate_duration(self.timeentry3.date, self.timeentry3.start_time, self.timeentry3.end_time)
+        hour4 = calculate_duration(self.timeentry4.date, self.timeentry4.start_time, self.timeentry4.end_time)
 
         HOURS_TOTAL = hours1 + hour2 + hour3 + hour4
 
         content = json.loads(response.content)
         self.assertResponseNoErrors(response)
-        self.assertNotEqual(content['data']['summaryMonthly']['totalHoursMonthly'], str(HOURS_TOTAL))
+        self.assertNotEqual(content['data']['summaryMonthly']['totalHoursMonthly'],
+                            str(HOURS_TOTAL))
 
 
 """ DashBoard Api """
@@ -699,41 +665,33 @@ class TestDashbaoardWeekAPI(ChronoGraphQLTestCase):
             self.q
         )
 
-        hours1 = datetime.combine(self.timeentry1.date, self.timeentry1.end_time)\
-                - datetime.combine(self.timeentry1.date, self.timeentry1.start_time)
-
-        hour2 = datetime.combine(self.timeentry2.date, self.timeentry2.end_time)\
-                - datetime.combine(self.timeentry2.date, self.timeentry2.start_time)
-        hour3 = datetime.combine(self.timeentry3.date, self.timeentry3.end_time)\
-                - datetime.combine(self.timeentry3.date, self.timeentry3.start_time)
+        hours1 = calculate_duration(self.timeentry1.date, self.timeentry1.start_time, self.timeentry1.end_time)
+        hour2 = calculate_duration(self.timeentry2.date, self.timeentry2.start_time, self.timeentry2.end_time)
+        hour3 = calculate_duration(self.timeentry3.date, self.timeentry3.start_time, self.timeentry3.end_time)
 
         HOURS_TOTAL = hours1 + hour2 + hour3
 
         content = json.loads(response.content)
         self.assertResponseNoErrors(response)
-        self.assertEqual(content['data']['dashboard']['thisWeek']['totalHours'], str(HOURS_TOTAL))
+        self.assertEqual(content['data']['dashboard']['thisWeek']['totalHours'],
+                         str(HOURS_TOTAL))
 
     def test_dashboard_this_week_with_another_user(self):
         response = self.query(
             self.q
         )
 
-        hours1 = datetime.combine(self.timeentry1.date, self.timeentry1.end_time)\
-                - datetime.combine(self.timeentry1.date, self.timeentry1.start_time)
-
-        hour2 = datetime.combine(self.timeentry2.date, self.timeentry2.end_time)\
-                - datetime.combine(self.timeentry2.date, self.timeentry2.start_time)
-        hour3 = datetime.combine(self.timeentry3.date, self.timeentry3.end_time)\
-                - datetime.combine(self.timeentry3.date, self.timeentry3.start_time)
-
-        hour4 = datetime.combine(self.timeentry4.date, self.timeentry4.end_time)\
-                - datetime.combine(self.timeentry4.date, self.timeentry4.start_time)
+        hours1 = calculate_duration(self.timeentry1.date, self.timeentry1.start_time, self.timeentry1.end_time)
+        hour2 = calculate_duration(self.timeentry2.date, self.timeentry2.start_time, self.timeentry2.end_time)
+        hour3 = calculate_duration(self.timeentry3.date, self.timeentry3.start_time, self.timeentry3.end_time)
+        hour4 = calculate_duration(self.timeentry4.date, self.timeentry4.start_time, self.timeentry4.end_time)
 
         HOURS_TOTAL = hours1 + hour2 + hour3 + hour4
 
         content = json.loads(response.content)
         self.assertResponseNoErrors(response)
-        self.assertNotEqual(content['data']['dashboard']['thisWeek']['totalHours'], str(HOURS_TOTAL))
+        self.assertNotEqual(content['data']['dashboard']['thisWeek']['totalHours'],
+                            str(HOURS_TOTAL))
 
 
 class TestDashbaoardHoursByProjectAPI(ChronoGraphQLTestCase):
@@ -800,21 +758,19 @@ class TestDashbaoardHoursByProjectAPI(ChronoGraphQLTestCase):
         response = self.query(
             self.q
         )
-        hour1 = datetime.combine(self.timeentry1.date, self.timeentry1.end_time)\
-                - datetime.combine(self.timeentry1.date, self.timeentry1.start_time)
-
-        hour2 = datetime.combine(self.timeentry2.date, self.timeentry2.end_time)\
-                - datetime.combine(self.timeentry2.date, self.timeentry2.start_time)
+        hour1 = calculate_duration(self.timeentry1.date, self.timeentry1.start_time, self.timeentry1.end_time)
+        hour2 = calculate_duration(self.timeentry2.date, self.timeentry2.start_time, self.timeentry2.end_time)
 
         HOURS_TOTAL = hour1 + hour2
 
         content = json.loads(response.content)
         self.assertResponseNoErrors(response)
-        self.assertEqual(content['data']['dashboard']['hoursByProject']['projectTotal'], str(HOURS_TOTAL))
+        self.assertEqual(content['data']['dashboard']['hoursByProject']['projectTotal'],
+                         str(HOURS_TOTAL))
         self.assertEqual(content['data']['dashboard']['hoursByProject']['projectParticular'][0]['duration'],
-        str(hour1))
+                         str(hour1))
         self.assertEqual(content['data']['dashboard']['hoursByProject']['projectParticular'][0]['projectName'],
-        self.project1.title)
+                         self.project1.title)
 
 
 class TestDashbaoardMostActiveeProjectAPI(ChronoGraphQLTestCase):
@@ -881,21 +837,20 @@ class TestDashbaoardMostActiveeProjectAPI(ChronoGraphQLTestCase):
         response = self.query(
             self.q
         )
-        hour1 = datetime.combine(self.timeentry1.date, self.timeentry1.end_time)\
-                - datetime.combine(self.timeentry1.date, self.timeentry1.start_time)
 
-        hour2 = datetime.combine(self.timeentry2.date, self.timeentry2.end_time)\
-                - datetime.combine(self.timeentry2.date, self.timeentry2.start_time)
+        hour1 = calculate_duration(self.timeentry1.date, self.timeentry1.start_time, self.timeentry1.end_time)
+        hour2 = calculate_duration(self.timeentry2.date, self.timeentry2.start_time, self.timeentry2.end_time)
 
         HOURS_TOTAL = hour1 + hour2
 
         content = json.loads(response.content)
         self.assertResponseNoErrors(response)
-        self.assertEqual(content['data']['dashboard']['mostActiveProject']['projectTotal'], str(HOURS_TOTAL))
+        self.assertEqual(content['data']['dashboard']['mostActiveProject']['projectTotal'],
+                         str(HOURS_TOTAL))
         self.assertEqual(content['data']['dashboard']['mostActiveProject']['projectParticular'][0]['duration'],
-        str(hour1))
+                         str(hour1))
         self.assertEqual(content['data']['dashboard']['mostActiveProject']['projectParticular'][0]['projectName'],
-        self.project1.title)
+                         self.project1.title)
 
 
 class TestDashbaoardMyProjectAPI(ChronoGraphQLTestCase):
@@ -972,14 +927,141 @@ class TestDashbaoardMyProjectAPI(ChronoGraphQLTestCase):
             self.q
         )
 
-        hour1 = datetime.combine(self.timeentry1.date, self.timeentry1.end_time)\
-                - datetime.combine(self.timeentry1.date, self.timeentry1.start_time)
+        hour1 = calculate_duration(self.timeentry1.date, self.timeentry1.start_time, self.timeentry1.end_time)
 
         content = json.loads(response.content)
         self.assertResponseNoErrors(response)
         self.assertEqual(content['data']['dashboard']['myProject'][0]['projectName'],
-        self.project1.title)
+                         self.project1.title)
         self.assertEqual(content['data']['dashboard']['myProject'][0]['hoursSpent'],
-        str(hour1))
+                         str(hour1))
         self.assertEqual(content['data']['dashboard']['myProject'][1]['clientName'],
-        self.client2.name)
+                         self.client2.name)
+
+
+class TestTaskGroupApi(ChronoGraphQLTestCase):
+    def setUp(self):
+        self.user = UserFactory.create()
+        self.force_login(self.user)
+        self.user_group = UserGroupFactory.create(
+            members=[self.user]
+        )
+        self.client = ClientFactory.create(
+            name="Golden Community"
+        )
+        self.project = ProjectFactory.create(
+            title="MIS",
+            user_group=[self.user_group],
+            client=self.client
+        )
+        self.task_group1 = TaskGroupFactory.create(
+            project=self.project,
+            users=[self.user],
+        )
+        self.task_group2 = TaskGroupFactory.create(
+            project=self.project,
+            users=[self.user],
+        )
+        self.task1 = TaskFactory.create(
+            task_group=self.task_group1,
+            user=self.user
+        )
+        self.task2 = TaskFactory.create(
+            task_group=self.task_group1,
+            user=self.user
+        )
+        self.task3 = TaskFactory.create(
+            task_group=self.task_group2,
+            user=self.user
+        )
+        self.task4 = TaskFactory.create(
+            task_group=self.task_group2,
+            user=self.user
+        )
+        self.timeentry1 = TimeEntryFactory.create(
+            date=datetime.now().date() + timedelta(days=1),
+            start_time=time(10, 10, 10),
+            end_time=time(11, 10, 10),
+            user=self.user,
+            task=self.task1,
+        )
+        self.timeentry2 = TimeEntryFactory.create(
+            date=datetime.now().date() + timedelta(days=2),
+            start_time=time(10, 10, 10),
+            end_time=time(20, 10, 10),
+            user=self.user,
+            task=self.task2,
+        )
+        self.timeentry3 = TimeEntryFactory.create(
+            date=datetime.now().date() + timedelta(days=5),
+            start_time=time(10, 10, 10),
+            end_time=time(11, 10, 10),
+            user=self.user,
+            task=self.task3,
+        )
+        self.timeentry4 = TimeEntryFactory.create(
+            date=datetime.now().date() + timedelta(days=12),
+            start_time=time(10, 10, 10),
+            end_time=time(20, 10, 10),
+            user=self.user,
+            task=self.task4,
+        )
+        self.timeentry5 = TimeEntryFactory.create(
+            date=datetime.now().date() + timedelta(days=11),
+            start_time=time(10, 10, 10),
+            end_time=time(20, 10, 10),
+            user=self.user,
+            task=self.task1,
+        )
+        self.timeentry6 = TimeEntryFactory.create(
+            date=datetime.now().date() + timedelta(days=11),
+            start_time=time(10, 10, 10),
+            end_time=time(20, 10, 10),
+            user=self.user,
+            task=self.task2,
+        )
+        self.q = """
+            query MyQuery{
+                taskgroup(id: %s){
+                    id
+                    duration
+                    title
+                    taskSet {
+                        id
+                        duration
+                    }
+                }
+            }
+        """
+
+    def test_task_group_response(self):
+        hour1 = calculate_duration(self.timeentry1.date, self.timeentry1.start_time, self.timeentry1.end_time)
+        hour2 = calculate_duration(self.timeentry2.date, self.timeentry2.start_time, self.timeentry2.end_time)
+        hour3 = calculate_duration(self.timeentry3.date, self.timeentry3.start_time, self.timeentry3.end_time)
+        hour4 = calculate_duration(self.timeentry4.date, self.timeentry4.start_time, self.timeentry4.end_time)
+        hour5 = calculate_duration(self.timeentry5.date, self.timeentry5.start_time, self.timeentry5.end_time)
+        hour6 = calculate_duration(self.timeentry6.date, self.timeentry6.start_time, self.timeentry6.end_time)
+
+        HOURS_TOTAL = hour1 + hour2 + hour3 + hour4 + hour5
+
+        task_group1_duration_total = hour1 + hour2 + hour5 + hour6
+        task_1_duration_total = hour1 + hour5
+        task_2_duration_total = hour2 + hour6
+
+        response = self.query(
+            self.q % self.task_group1.id
+        )
+        content = json.loads(response.content)
+        self.assertResponseNoErrors(response)
+        self.assertEqual(content['data']['taskgroup']['id'],
+                         str(self.task_group1.id))
+        self.assertEqual(content['data']['taskgroup']['duration'],
+                         str(task_group1_duration_total))
+        self.assertEqual(content['data']['taskgroup']['taskSet'][1]['id'],
+                         str(self.task1.id))
+        self.assertEqual(content['data']['taskgroup']['taskSet'][1]['duration'],
+                         str(task_1_duration_total))
+        self.assertEqual(content['data']['taskgroup']['taskSet'][0]['id'],
+                         str(self.task2.id))
+        self.assertEqual(content['data']['taskgroup']['taskSet'][0]['duration'],
+                         str(task_2_duration_total))

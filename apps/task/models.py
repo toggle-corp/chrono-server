@@ -49,17 +49,15 @@ class TaskGroup(BaseModel):
         ).distinct()
 
     def duration_taskgroup(self, user):
-        task_group = TaskGroup.objects.filter(id=self.id).annotate(
-            duration=models.Subquery(
-                Task.objects.order_by().filter(
-                    task_group=models.OuterRef('pk'),
+        total_duration = Task.objects.order_by().filter(
+                    task_group=self.id,
                     user=user
                 ).values('task_group').annotate(
-                    task_duration=models.Sum(F('timeentry__end_time') - F('timeentry__start_time'))
-                ).values('task_duration')
-            )
-        ).aggregate(sum=models.Sum('duration'))['sum']
-        return task_group
+                    task_duration=F('timeentry__end_time') - F('timeentry__start_time')
+                ).aggregate(
+                    sum=Sum('task_duration')
+                )['sum']
+        return total_duration
 
 
 class Task(BaseModel):
@@ -68,7 +66,7 @@ class Task(BaseModel):
     external_url = models.URLField(max_length=255,
                                    blank=True, null=True)
     task_group = models.ForeignKey(TaskGroup, on_delete=models.CASCADE,
-                                    blank=True, null=True)
+                                   blank=True, null=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE,
                              blank=True, null=True)
 
@@ -84,11 +82,9 @@ class Task(BaseModel):
         ).distinct()
 
     def duration_task(self, user):
-        task = Task.objects.get(id=self.id)
-        duration = TimeEntry.objects.filter(
+        duration = self.timeentry_set.filter(
             user=user,
-            task=task
-        ).order_by().values('task').annotate(
+        ).values('task').annotate(
             duration=F('end_time') - F('start_time')
         ).aggregate(
             sum=Sum('duration')
@@ -109,7 +105,6 @@ class TimeEntry(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
 
-
     def __str__(self):
         return f'{self.task.title} by {str(self.user)} {str(self.start_time)}'
 
@@ -119,7 +114,7 @@ class TimeEntry(models.Model):
         start_time = values.get('start_time', getattr(instance, 'start_time', None))
         end_time = values.get('end_time', getattr(instance, 'end_time', None))
         date = values.get('date', getattr(instance, 'date', None))
-        user = values.get('user',getattr(instance, 'date', None))
+        user = values.get('user', getattr(instance, 'date', None))
         if end_time and start_time > end_time:
             errors['end_time'] = gettext('start_time must be less than end_time')
 

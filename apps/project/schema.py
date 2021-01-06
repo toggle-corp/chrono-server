@@ -7,6 +7,9 @@ from graphene_django_extras import (
 )
 from project.models import Client, Project, Tag
 from project.filters import ProjectFilter
+from utils.fields import (
+    DjangoPaginatedListObjectField, CustomDjangoListObjectType
+)
 
 
 class ClientType(DjangoObjectType):
@@ -21,7 +24,7 @@ class ProjectType(DjangoObjectType):
         fields = '__all__'
 
 
-class ProjectListType(DjangoObjectType):
+class ProjectListType(CustomDjangoListObjectType):
     class Meta:
         model = Project
         filterset_class = ProjectFilter
@@ -36,5 +39,5 @@ class TagType(DjangoObjectType):
 class Query(object):
     client = DjangoObjectField(ClientType)
     project = DjangoObjectField(ProjectType)
-    project_list = DjangoFilterListField(ProjectListType)
+    project_list = DjangoPaginatedListObjectField(ProjectListType)
     tag = DjangoObjectField(TagType)

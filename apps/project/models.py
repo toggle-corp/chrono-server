@@ -24,7 +24,7 @@ class Project(BaseModel):
     description = models.TextField(blank=True, null=True)
     user_group = models.ManyToManyField(UserGroup, blank=True)
     client = models.ForeignKey(Client, on_delete=models.CASCADE,
-                                blank=True, null=True)
+                               blank=True, null=True)
 
     def __str__(self):
         return self.title
@@ -32,9 +32,7 @@ class Project(BaseModel):
     @staticmethod
     def get_for(user):
         """
-
-        Project accessible if user is 
-         Model and schema setup
+        Project accessible if user is
         member of the group
         """
         return Project.objects.filter(
@@ -53,7 +51,7 @@ class Tag(BaseModel):
                                 blank=True, null=True)
 
     class Meta:
-        unique_together = (('title','project'), )
+        unique_together = (('title', 'project'), )
 
     def __str__(self):
         return f'{self.project.title} {self.title}'

@@ -8,10 +8,8 @@ import graphene
 from graphene_django import DjangoObjectType
 from graphene_django_extras import (
     DjangoObjectField,
-    DjangoObjectType,
-    DjangoFilterListField,
+    PageGraphqlPagination,
 )
-#from graphene_django_extras.paginations import LimitOffsetGraphqlPagination
 
 from user.schema import UserType
 from usergroup.schema import UserGroupType
@@ -19,15 +17,19 @@ from task.models import TaskGroup, Task, TimeEntry
 from task.enums import StatusGrapheneEnum
 from task.filters import TaskFilter, TaskGroupFilter, TimeEntryFilter
 from project.models import Project
+from project.schema import ProjectType
+from utils.fields import (
+    DjangoPaginatedListObjectField, CustomDjangoListObjectType
+)
 
 
 class TaskGroupType(DjangoObjectType):
     status = graphene.Field(StatusGrapheneEnum)
     duration = graphene.String()
+    project = graphene.Field(ProjectType)
 
     class Meta:
         model = TaskGroup
-        fields = '__all__'
 
     def resolve_duration(self, info, **kwargs):
         user = info.context.user
@@ -36,7 +38,8 @@ class TaskGroupType(DjangoObjectType):
         else:
             return self.duration_taskgroup(user)
 
-class TaskGroupListType(DjangoObjectType):
+
+class TaskGroupListType(CustomDjangoListObjectType):
     class Meta:
         model = TaskGroup
         filterset_class = TaskGroupFilter
@@ -45,19 +48,15 @@ class TaskGroupListType(DjangoObjectType):
 class TaskType(DjangoObjectType):
     class Meta:
         model = Task
-        fields = '__all__'
+
+    created_by = graphene.Field(UserType)
+    modified_by = graphene.Field(UserType)
+    user = graphene.Field(UserType)
+    duration = graphene.String()
 
     @staticmethod
     def get_queryset(queryset, info):
         return queryset
-
-
-class TaskListType(DjangoObjectType):
-    duration = graphene.String()
-
-    class Meta:
-        model = Task
-        filterset_class = TaskFilter
 
     def resolve_duration(self, info, **kwargs):
         user = info.context.user
@@ -66,16 +65,24 @@ class TaskListType(DjangoObjectType):
         else:
             return self.duration_task(user)
 
+
+class TaskListType(CustomDjangoListObjectType):
+    class Meta:
+        model = Task
+        filterset_class = TaskFilter
+
+
 class TimeEntryType(DjangoObjectType):
     duration = graphene.String()
     day_total = graphene.String()
+    user = graphene.Field(UserType)
 
     class Meta:
         model = TimeEntry
         fields = '__all__'
 
 
-class TimeEntryTypeList(DjangoObjectType):
+class TimeEntryTypeList(CustomDjangoListObjectType):
     duration = graphene.String()
 
     class Meta:
@@ -184,7 +191,8 @@ class DashBoardType(graphene.ObjectType):
 
             each_project_hours = queryset.order_by().values('task__task_group__project').annotate(
                 duration=Sum(F('end_time') - F('start_time')),
-            ).values('duration', project_name=F('task__task_group__project__title'))
+            ).values('duration',
+                     project_name=F('task__task_group__project__title'))
 
             return SummaryProjectDashBoard(
                 project_total=total_project_hours,
@@ -214,7 +222,8 @@ class DashBoardType(graphene.ObjectType):
 
             each_project_hours = queryset.order_by().values('task__task_group__project').annotate(
                 duration=Sum(F('end_time') - F('start_time')),
-            ).values('duration', project_name=F('task__task_group__project__title'))
+            ).values('duration',
+                     project_name=F('task__task_group__project__title'))
 
             return SummaryMostActiveProject(
                 project_total=total_project_hours,
@@ -244,32 +253,19 @@ class DashBoardType(graphene.ObjectType):
 
 class Query(object):
     taskgroup = DjangoObjectField(TaskGroupType)
-    taskgroup_list = DjangoFilterListField(TaskGroupListType)
+    taskgroup_list = DjangoPaginatedListObjectField(TaskGroupListType,
+                                                    pagination=PageGraphqlPagination(
+                                                        page_size_query_param='pageSize')
+                                                    )
     task = DjangoObjectField(TaskType)
-    task_user = graphene.List(TaskType)
-    task_list = DjangoFilterListField(TaskListType)
+    task_list = DjangoPaginatedListObjectField(TaskListType,
+                                               pagination=PageGraphqlPagination(
+                                                    page_size_query_param='pageSize')
+                                               )
     timeentry = DjangoObjectField(TimeEntryType)
     summary_weekly = graphene.Field(SummaryWeekType)
     summary_monthly = graphene.Field(SummaryMonthType)
     dashboard = graphene.Field(DashBoardType)
-
-    def resolve_taskgroup(root, info, **kwargs):
-        user = info.context.user
-        if not user:
-            return None
-        else:
-            return TaskGroup.objects.filter(
-                users=user
-            )
-
-    def resolve_task_user(root, info):
-        user = info.context.user
-        if not user:
-            return None
-        else:
-            return Task.objects.filter(
-                user=user,
-            )
 
     def resolve_summary_weekly(root, info, **kwargs):
         date = datetime.date.today()
@@ -306,6 +302,8 @@ class Query(object):
         date = datetime.date.today()
         last_day = date + relativedelta(day=1, months=+1, days=-1)
         first_day = date + relativedelta(day=1)
+        print(first_day)
+        print(last_day)
         user = info.context.user
         if user.is_authenticated:
 

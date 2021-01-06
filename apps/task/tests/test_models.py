@@ -47,7 +47,7 @@ class TestTimeEntryModel(ChronoGraphQLTestCase):
         timeentry.user = self.user
         timeentry.save()
 
-        difference = datetime.combine(timeentry.date, timeentry.end_time)\
-                     - datetime.combine(timeentry.date, timeentry.start_time)
+        difference = datetime.combine(timeentry.date, timeentry.end_time) - \
+            datetime.combine(timeentry.date, timeentry.start_time)
 
         self.assertEqual(timeentry.duration, difference)
